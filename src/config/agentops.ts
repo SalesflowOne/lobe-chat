@@ -1,0 +1,62 @@
+/* eslint-disable sort-keys-fix/sort-keys-fix */
+import { createEnv } from '@t3-oss/env-nextjs';
+import { z } from 'zod';
+
+/** Well-known connectors pinned at the top of the integrations catalog. */
+export const FEATURED_INTEGRATION_SLUGS = [
+  'slack',
+  'gmail',
+  'google_sheets',
+  'notion',
+  'hubspot',
+  'stripe',
+  'github',
+  'linear',
+  'airtable',
+  'salesforce',
+  'microsoft_outlook',
+  'microsoft_teams',
+  'shopify',
+  'twilio',
+  'zendesk',
+  'intercom',
+  'asana',
+  'trello',
+  'dropbox',
+  'google_drive',
+  'google_calendar',
+  'discord',
+  'mailchimp',
+  'openai',
+  'anthropic',
+] as const;
+
+export type FeaturedIntegrationSlug = (typeof FEATURED_INTEGRATION_SLUGS)[number];
+
+export const getAgentOpsConfig = () => {
+  return createEnv({
+    client: {
+      NEXT_PUBLIC_AGENTOPS_APP_URL: z.string().url().optional(),
+      NEXT_PUBLIC_AGENTOPS_PRODUCT_NAME: z.string().optional().default('AgentOps'),
+    },
+    server: {
+      AGENTOPS_APPS_CACHE_TTL_SECONDS: z.coerce.number().optional().default(3600),
+    },
+    runtimeEnv: {
+      NEXT_PUBLIC_AGENTOPS_APP_URL:
+        process.env.NEXT_PUBLIC_AGENTOPS_APP_URL ?? 'https://pathofsoler.com',
+      NEXT_PUBLIC_AGENTOPS_PRODUCT_NAME: process.env.NEXT_PUBLIC_AGENTOPS_PRODUCT_NAME,
+      AGENTOPS_APPS_CACHE_TTL_SECONDS: process.env.AGENTOPS_APPS_CACHE_TTL_SECONDS,
+    },
+  });
+};
+
+export const agentOpsEnv = getAgentOpsConfig();
+
+export const getPipedreamExternalUserId = (params: {
+  orgId?: string | null;
+  userId: string;
+}): string => {
+  if (params.orgId) return `org_${params.orgId}`;
+  return `user_${params.userId}`;
+};

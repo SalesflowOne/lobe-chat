@@ -14,6 +14,9 @@ export const config = {
     '/',
     '/chat(.*)',
     '/settings(.*)',
+    '/integrations',
+    '/integrations/(.*)',
+    '/artifacts(.*)',
     // ↓ cloud ↓
   ],
 };
@@ -46,6 +49,8 @@ const nextAuthMiddleware = NextAuthEdge.auth((req) => {
 
 const isProtectedRoute = createRouteMatcher([
   '/settings(.*)',
+  '/integrations(.*)',
+  '/artifacts(.*)',
   // ↓ cloud ↓
 ]);
 

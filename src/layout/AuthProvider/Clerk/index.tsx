@@ -4,6 +4,7 @@ import { ClerkProvider } from '@clerk/nextjs';
 import { PropsWithChildren, memo, useEffect, useMemo, useState, useTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { clerkSatelliteEnv, isClerkSatelliteReady } from '@/config/clerk';
 import { featureFlagsSelectors, useServerConfigStore } from '@/store/serverConfig';
 
 import UserUpdater from './UserUpdater';
@@ -41,11 +42,21 @@ const Clerk = memo(({ children }: PropsWithChildren) => {
     [appearance, enableClerkSignUp],
   );
 
+  const satelliteProps = isClerkSatelliteReady()
+    ? {
+        domain: clerkSatelliteEnv.NEXT_PUBLIC_CLERK_DOMAIN!,
+        isSatellite: true as const,
+        signInUrl: clerkSatelliteEnv.NEXT_PUBLIC_CLERK_SIGN_IN_URL!,
+        signUpUrl: clerkSatelliteEnv.NEXT_PUBLIC_CLERK_SIGN_UP_URL!,
+      }
+    : {};
+
   return (
     <ClerkProvider
       appearance={updatedAppearance}
       localization={localization}
       signUpUrl={!enableClerkSignUp ? '/login' : '/signup'} // Redirect sign-up to sign-in if disabled
+      {...satelliteProps}
     >
       {children}
       <UserUpdater />

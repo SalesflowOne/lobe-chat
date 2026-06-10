@@ -1,6 +1,6 @@
 import { Icon } from '@lobehub/ui';
 import { Tag } from 'antd';
-import { Bot, Brain, Cloudy, Info, Mic2, Settings2, Sparkles } from 'lucide-react';
+import { Bot, Brain, Cloudy, Info, Mic2, Plug, Settings2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -65,6 +65,15 @@ export const useCategory = () => {
           label: (
             <Link href={'/settings/tts'} onClick={(e) => e.preventDefault()}>
               {t('tab.tts')}
+            </Link>
+          ),
+        },
+        {
+          icon: <Icon icon={Plug} />,
+          key: 'integrations',
+          label: (
+            <Link href={'/integrations'} onClick={(e) => e.preventDefault()}>
+              Integrations
             </Link>
           ),
         },

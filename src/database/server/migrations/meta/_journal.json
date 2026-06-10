@@ -35,6 +35,13 @@
       "when": 1721724512422,
       "tag": "0004_add_next_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781135000000,
+      "tag": "0005_agentops",
+      "breakpoints": true
     }
   ],
   "version": "6"
