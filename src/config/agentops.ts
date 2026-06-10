@@ -2,6 +2,8 @@
 import { createEnv } from '@t3-oss/env-nextjs';
 import { z } from 'zod';
 
+export const DEFAULT_APP_HOST = 'pathofsoler.com';
+
 /** Well-known connectors pinned at the top of the integrations catalog. */
 export const FEATURED_INTEGRATION_SLUGS = [
   'slack',
@@ -44,7 +46,7 @@ export const getAgentOpsConfig = () => {
     },
     runtimeEnv: {
       NEXT_PUBLIC_AGENTOPS_APP_URL:
-        process.env.NEXT_PUBLIC_AGENTOPS_APP_URL ?? 'https://pathofsoler.com',
+        process.env.NEXT_PUBLIC_AGENTOPS_APP_URL ?? `https://${DEFAULT_APP_HOST}`,
       NEXT_PUBLIC_AGENTOPS_PRODUCT_NAME: process.env.NEXT_PUBLIC_AGENTOPS_PRODUCT_NAME,
       AGENTOPS_APPS_CACHE_TTL_SECONDS: process.env.AGENTOPS_APPS_CACHE_TTL_SECONDS,
     },

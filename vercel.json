@@ -4,5 +4,13 @@
       "NODE_OPTIONS": "--max-old-space-size=6144"
     }
   },
-  "installCommand": "bun install"
+  "installCommand": "bun install",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.pathofsoler.com" }],
+      "destination": "https://pathofsoler.com/:path*",
+      "permanent": true
+    }
+  ]
 }

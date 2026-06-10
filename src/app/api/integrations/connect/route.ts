@@ -1,11 +1,24 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
-import { agentOpsEnv, getPipedreamExternalUserId } from '@/config/agentops';
+import { getPipedreamExternalUserId } from '@/config/agentops';
+import { getAppOrigin } from '@/config/clerk';
 import { isPipedreamConfigured } from '@/config/pipedream';
 import { getPipedreamClient } from '@/server/pipedream/client';
 
 export const runtime = 'nodejs';
+
+const resolveAllowedOrigin = (req: Request): string => {
+  const forwardedHost = req.headers.get('x-forwarded-host');
+  const host = forwardedHost ?? req.headers.get('host');
+
+  if (host) {
+    const protocol = req.headers.get('x-forwarded-proto') ?? 'https';
+    return `${protocol}://${host.split(',')[0].trim()}`;
+  }
+
+  return getAppOrigin();
+};
 
 export const POST = async (req: Request) => {
   const { orgId, userId } = await auth();
@@ -26,12 +39,12 @@ export const POST = async (req: Request) => {
 
   const externalUserId = getPipedreamExternalUserId({ orgId, userId });
   const client = getPipedreamClient();
-  const appUrl = agentOpsEnv.NEXT_PUBLIC_AGENTOPS_APP_URL ?? 'https://pathofsoler.com';
+  const appOrigin = resolveAllowedOrigin(req);
 
   const tokenResponse = await client.tokens.create({
-    allowedOrigins: [appUrl],
-    externalUserId: externalUserId,
-    successRedirectUri: `${appUrl}/integrations?connected=${appSlug}`,
+    allowedOrigins: [appOrigin, getAppOrigin()],
+    externalUserId,
+    successRedirectUri: `${appOrigin}/integrations?connected=${appSlug}`,
   });
 
   const connectUrl = new URL(tokenResponse.connectLinkUrl);

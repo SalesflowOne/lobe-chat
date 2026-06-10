@@ -38,6 +38,12 @@ export const POST = async (req: Request): Promise<NextResponse> => {
     }
 
     default: {
+      // Acknowledge org/membership events until dedicated handlers are added
+      if (type.startsWith('organization') || type.startsWith('organizationMembership')) {
+        pino.info(`clerk webhook acknowledged: ${type}`);
+        return NextResponse.json({ acknowledged: true });
+      }
+
       pino.warn(
         `${req.url} received event type "${type}", but no handler is defined for this type`,
       );

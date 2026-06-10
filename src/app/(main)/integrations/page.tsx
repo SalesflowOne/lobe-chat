@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Flexbox } from 'react-layout-kit';
 
 import IntegrationsCatalog from '@/features/integrations/IntegrationsCatalog';
@@ -22,7 +23,9 @@ const IntegrationsPage = () => {
       >
         <OrganizationSwitcher />
       </Flexbox>
-      <IntegrationsCatalog />
+      <Suspense fallback={null}>
+        <IntegrationsCatalog />
+      </Suspense>
     </Flexbox>
   );
 };

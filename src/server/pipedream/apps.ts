@@ -14,12 +14,21 @@ export interface IntegrationApp {
   nameSlug: string;
 }
 
+export interface IntegrationAppsPage {
+  apps: IntegrationApp[];
+  pageInfo: {
+    endCursor: string | null;
+    hasMore: boolean;
+    totalCount?: number;
+  };
+}
+
 interface AppsCache {
   apps: IntegrationApp[];
   expiresAt: number;
 }
 
-let appsCache: AppsCache | null = null;
+let featuredAppsCache: AppsCache | null = null;
 
 const mapApp = (app: {
   authType?: string | null;
@@ -42,77 +51,89 @@ const mapApp = (app: {
   nameSlug: app.nameSlug,
 });
 
-/** Fetch the full Pipedream Connect app catalog (actions-capable apps only). */
-export const fetchAllIntegrationApps = async (): Promise<IntegrationApp[]> => {
-  const ttlMs = agentOpsEnv.AGENTOPS_APPS_CACHE_TTL_SECONDS * 1000;
-
-  if (appsCache && appsCache.expiresAt > Date.now()) {
-    return appsCache.apps;
-  }
-
+/** Paginated catalog — avoids loading 3000+ apps into memory at once. */
+export const listIntegrationAppsPage = async (params: {
+  after?: string;
+  limit?: number;
+  q?: string;
+}): Promise<IntegrationAppsPage> => {
   if (!isPipedreamConfigured()) {
-    return [];
+    return { apps: [], pageInfo: { endCursor: null, hasMore: false } };
   }
 
   const client = getPipedreamClient();
-  const apps: IntegrationApp[] = [];
+  const limit = Math.min(params.limit ?? 48, 100);
 
-  let page = await client.apps.list({
+  const page = await client.apps.list({
+    after: params.after,
+    hasActions: true,
+    limit,
+    q: params.q,
+    sortDirection: params.q ? 'desc' : 'asc',
+    sortKey: params.q ? 'featured_weight' : 'name',
+  });
+
+  const apps: IntegrationApp[] = [];
+  for await (const app of page) {
+    apps.push(mapApp(app));
+  }
+
+  const response = page.response;
+  const endCursor = response?.pageInfo?.endCursor ?? null;
+  const hasMore = Boolean(endCursor && page.hasNextPage());
+
+  return {
+    apps,
+    pageInfo: {
+      endCursor,
+      hasMore,
+      totalCount: response?.pageInfo?.totalCount,
+    },
+  };
+};
+
+/** Featured connectors — small cached set for the top of the catalog. */
+export const fetchFeaturedIntegrationApps = async (): Promise<IntegrationApp[]> => {
+  const ttlMs = agentOpsEnv.AGENTOPS_APPS_CACHE_TTL_SECONDS * 1000;
+
+  if (featuredAppsCache && featuredAppsCache.expiresAt > Date.now()) {
+    return featuredAppsCache.apps;
+  }
+
+  if (!isPipedreamConfigured()) return [];
+
+  const client = getPipedreamClient();
+  const page = await client.apps.list({
     hasActions: true,
     limit: 100,
     sortDirection: 'desc',
     sortKey: 'featured_weight',
   });
 
-  for await (const app of page) {
-    apps.push(mapApp(app));
-  }
+  const featuredSet = new Set<string>(FEATURED_INTEGRATION_SLUGS);
+  const bySlug = new Map<string, IntegrationApp>();
 
-  while (page.hasNextPage()) {
-    page = await page.getNextPage();
-    for await (const app of page) {
-      apps.push(mapApp(app));
+  for await (const app of page) {
+    if (featuredSet.has(app.nameSlug)) {
+      bySlug.set(app.nameSlug, mapApp(app));
     }
   }
 
-  const featuredSet = new Set<string>(FEATURED_INTEGRATION_SLUGS);
-  const featured = FEATURED_INTEGRATION_SLUGS.map((slug) =>
-    apps.find((a) => a.nameSlug === slug),
-  ).filter(Boolean) as IntegrationApp[];
-  const rest = apps
-    .filter((app) => !featuredSet.has(app.nameSlug))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const apps = FEATURED_INTEGRATION_SLUGS.map((slug) => bySlug.get(slug)).filter(
+    Boolean,
+  ) as IntegrationApp[];
 
-  const sorted = [...featured, ...rest];
-
-  appsCache = {
-    apps: sorted,
-    expiresAt: Date.now() + ttlMs,
-  };
-
-  return sorted;
+  featuredAppsCache = { apps, expiresAt: Date.now() + ttlMs };
+  return apps;
 };
 
 export const searchIntegrationApps = async (query: {
   limit?: number;
   q?: string;
 }): Promise<IntegrationApp[]> => {
-  if (!isPipedreamConfigured()) return [];
-
-  const client = getPipedreamClient();
-  const apps: IntegrationApp[] = [];
-
-  let page = await client.apps.list({
-    hasActions: true,
+  const page = await listIntegrationAppsPage({
     limit: query.limit ?? 50,
     q: query.q,
-    sortDirection: 'desc',
-    sortKey: 'featured_weight',
   });
-
-  for await (const app of page) {
-    apps.push(mapApp(app));
-  }
-
-  return apps;
+  return page.apps;
 };

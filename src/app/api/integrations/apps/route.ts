@@ -1,8 +1,9 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
+import { agentOpsEnv } from '@/config/agentops';
 import { isPipedreamConfigured } from '@/config/pipedream';
-import { fetchAllIntegrationApps, searchIntegrationApps } from '@/server/pipedream/apps';
+import { fetchFeaturedIntegrationApps, listIntegrationAppsPage } from '@/server/pipedream/apps';
 
 export const runtime = 'nodejs';
 
@@ -22,13 +23,37 @@ export const GET = async (req: Request) => {
 
   const { searchParams } = new URL(req.url);
   const q = searchParams.get('q') ?? undefined;
+  const after = searchParams.get('after') ?? undefined;
+  const featured = searchParams.get('featured') === 'true';
   const limit = searchParams.get('limit') ? Number(searchParams.get('limit')) : undefined;
 
-  const apps = q ? await searchIntegrationApps({ limit, q }) : await fetchAllIntegrationApps();
+  if (featured && !q) {
+    const apps = await fetchFeaturedIntegrationApps();
+    return NextResponse.json(
+      { apps, configured: true, featured: true, total: apps.length },
+      {
+        headers: {
+          'Cache-Control': `s-maxage=${agentOpsEnv.AGENTOPS_APPS_CACHE_TTL_SECONDS}, stale-while-revalidate=600`,
+        },
+      },
+    );
+  }
 
-  return NextResponse.json({
-    apps,
-    configured: true,
-    total: apps.length,
-  });
+  const page = await listIntegrationAppsPage({ after, limit, q });
+
+  return NextResponse.json(
+    {
+      apps: page.apps,
+      configured: true,
+      pageInfo: page.pageInfo,
+      total: page.pageInfo.totalCount ?? page.apps.length,
+    },
+    {
+      headers: q
+        ? undefined
+        : {
+            'Cache-Control': 's-maxage=300, stale-while-revalidate=60',
+          },
+    },
+  );
 };
