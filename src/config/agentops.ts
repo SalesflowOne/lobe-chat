@@ -2,7 +2,17 @@
 import { createEnv } from '@t3-oss/env-nextjs';
 import { z } from 'zod';
 
-export const DEFAULT_APP_HOST = 'pathofsoler.com';
+/** Canonical production host — sign-in and app URLs use this domain. */
+export const DEFAULT_APP_HOST = 'pathofsoler.one';
+
+/** Alternate hosts that also serve the app (redirected to canonical in production). */
+export const ALTERNATE_APP_HOSTS = [
+  'pathofsoler.com',
+  'www.pathofsoler.com',
+  'www.pathofsoler.one',
+] as const;
+
+export const AGENTOPS_ALLOWED_HOSTS = [DEFAULT_APP_HOST, ...ALTERNATE_APP_HOSTS] as const;
 
 /** Well-known connectors pinned at the top of the integrations catalog. */
 export const FEATURED_INTEGRATION_SLUGS = [
@@ -61,4 +71,9 @@ export const getPipedreamExternalUserId = (params: {
 }): string => {
   if (params.orgId) return `org_${params.orgId}`;
   return `user_${params.userId}`;
+};
+
+export const isAllowedAppHost = (host: string): boolean => {
+  const normalized = host.split(',')[0].trim().toLowerCase();
+  return AGENTOPS_ALLOWED_HOSTS.some((h) => h.toLowerCase() === normalized);
 };

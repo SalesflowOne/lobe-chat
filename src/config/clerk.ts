@@ -2,7 +2,12 @@
 import { createEnv } from '@t3-oss/env-nextjs';
 import { z } from 'zod';
 
-import { DEFAULT_APP_HOST, agentOpsEnv } from '@/config/agentops';
+import {
+  AGENTOPS_ALLOWED_HOSTS,
+  DEFAULT_APP_HOST,
+  agentOpsEnv,
+  isAllowedAppHost,
+} from '@/config/agentops';
 
 export const getAppOrigin = (): string => {
   const configured = agentOpsEnv.NEXT_PUBLIC_AGENTOPS_APP_URL;
@@ -11,7 +16,7 @@ export const getAppOrigin = (): string => {
   return `https://${DEFAULT_APP_HOST}`;
 };
 
-/** Auth stays on the app domain — /login and /signup on pathofsoler.com */
+/** Auth stays on the app domain — /login and /signup on pathofsoler.one */
 export const getAgentOpsAuthUrls = () => {
   const origin = getAppOrigin();
 
@@ -19,6 +24,29 @@ export const getAgentOpsAuthUrls = () => {
     signInUrl: `${origin}/login`,
     signUpUrl: `${origin}/signup`,
   };
+};
+
+export const resolveAppOriginFromRequest = (req: Request): string => {
+  const forwardedHost = req.headers.get('x-forwarded-host');
+  const host = (forwardedHost ?? req.headers.get('host') ?? '').split(',')[0].trim();
+
+  if (host && isAllowedAppHost(host)) {
+    const protocol = req.headers.get('x-forwarded-proto') ?? 'https';
+    return `${protocol}://${host}`;
+  }
+
+  return getAppOrigin();
+};
+
+export const getAllowedOrigins = (req?: Request): string[] => {
+  const origins = new Set<string>(AGENTOPS_ALLOWED_HOSTS.map((host) => `https://${host}`));
+  origins.add(getAppOrigin());
+
+  if (req) {
+    origins.add(resolveAppOriginFromRequest(req));
+  }
+
+  return [...origins];
 };
 
 export const getClerkSatelliteConfig = () => {
@@ -45,7 +73,7 @@ export const clerkSatelliteEnv = getClerkSatelliteConfig();
 
 /**
  * Satellite mode is opt-in only (e.g. sharing auth with a separate primary Clerk app).
- * Default: primary Clerk on pathofsoler.com — sign-in never leaves the domain.
+ * Default: primary Clerk on pathofsoler.one — sign-in never leaves the domain.
  */
 export const isClerkSatelliteReady = (): boolean =>
   Boolean(

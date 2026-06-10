@@ -2,23 +2,11 @@ import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
 import { getPipedreamExternalUserId } from '@/config/agentops';
-import { getAppOrigin } from '@/config/clerk';
+import { getAllowedOrigins, resolveAppOriginFromRequest } from '@/config/clerk';
 import { isPipedreamConfigured } from '@/config/pipedream';
 import { getPipedreamClient } from '@/server/pipedream/client';
 
 export const runtime = 'nodejs';
-
-const resolveAllowedOrigin = (req: Request): string => {
-  const forwardedHost = req.headers.get('x-forwarded-host');
-  const host = forwardedHost ?? req.headers.get('host');
-
-  if (host) {
-    const protocol = req.headers.get('x-forwarded-proto') ?? 'https';
-    return `${protocol}://${host.split(',')[0].trim()}`;
-  }
-
-  return getAppOrigin();
-};
 
 export const POST = async (req: Request) => {
   const { orgId, userId } = await auth();
@@ -39,10 +27,10 @@ export const POST = async (req: Request) => {
 
   const externalUserId = getPipedreamExternalUserId({ orgId, userId });
   const client = getPipedreamClient();
-  const appOrigin = resolveAllowedOrigin(req);
+  const appOrigin = resolveAppOriginFromRequest(req);
 
   const tokenResponse = await client.tokens.create({
-    allowedOrigins: [appOrigin, getAppOrigin()],
+    allowedOrigins: getAllowedOrigins(req),
     externalUserId,
     successRedirectUri: `${appOrigin}/integrations?connected=${appSlug}`,
   });
