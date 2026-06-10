@@ -27,11 +27,11 @@ import {
   OpenChat,
   OpenRouter,
   Perplexity,
+  Qwen,
   Rwkv,
   Spark,
   Stability,
   Stepfun,
-  Tongyi,
   Wenxin,
   Yi,
 } from '@lobehub/icons';
@@ -47,7 +47,7 @@ const ModelIcon = memo<ModelIconProps>(({ model: originModel, size = 12 }) => {
 
   // lower case the origin model so to better match more model id case
   const model = originModel.toLowerCase();
-  
+
   // currently supported models, maybe not in its own provider
   if (model.startsWith('gpt')) return <OpenAI size={size} />;
   if (model.startsWith('glm') || model.includes('chatglm')) return <ChatGLM size={size} />;
@@ -60,10 +60,16 @@ const ModelIcon = memo<ModelIconProps>(({ model: originModel, size = 12 }) => {
   if (model.includes('gemini')) return <Gemini size={size} />;
   if (model.includes('gemma')) return <Gemma.Simple size={size} />;
   if (model.includes('moonshot')) return <Moonshot size={size} />;
-  if (model.includes('qwen')) return <Tongyi size={size} />;
+  if (model.includes('qwen')) return <Qwen size={size} />;
   if (model.includes('minmax')) return <Minimax size={size} />;
   if (model.includes('abab')) return <Minimax size={size} />;
-  if (model.includes('mistral') || model.includes('mixtral') || model.includes('codestral') || model.includes('mathstral')) return <Mistral size={size} />;
+  if (
+    model.includes('mistral') ||
+    model.includes('mixtral') ||
+    model.includes('codestral') ||
+    model.includes('mathstral')
+  )
+    return <Mistral size={size} />;
   if (model.includes('pplx') || model.includes('sonar')) return <Perplexity size={size} />;
   if (model.includes('yi-')) return <Yi size={size} />;
   if (model.startsWith('openrouter')) return <OpenRouter size={size} />; // only for Cinematika and Auto
@@ -97,7 +103,8 @@ const ModelIcon = memo<ModelIconProps>(({ model: originModel, size = 12 }) => {
   )
     return <Stability size={size} />;
 
-  if (model.includes('phi3') || model.includes('phi-3') || model.includes('wizardlm')) return <Azure size={size} />;
+  if (model.includes('phi3') || model.includes('phi-3') || model.includes('wizardlm'))
+    return <Azure size={size} />;
   if (model.includes('firefly')) return <AdobeFirefly size={size} />;
   if (model.includes('jamba') || model.includes('j2-')) return <Ai21 size={size} />;
 });

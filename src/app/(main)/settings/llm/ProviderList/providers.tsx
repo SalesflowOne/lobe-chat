@@ -14,10 +14,10 @@ import {
   Novita,
   OpenRouter,
   Perplexity,
+  Qwen,
   SiliconCloud,
   Stepfun,
   Together,
-  Tongyi,
   ZeroOne,
   Zhipu,
 } from '@lobehub/icons';
@@ -143,7 +143,7 @@ export const useProviderList = (): ProviderItem[] => {
       {
         ...QwenProviderCard,
         docUrl: urlJoin(BASE_DOC_URL, 'qwen'),
-        title: <Tongyi.Combine extra={'千问'} size={26} type={'color'} />,
+        title: <Qwen.Combine extra={'千问'} size={26} type={'color'} />,
       },
       {
         ...DeepSeekProviderCard,
@@ -198,7 +198,7 @@ export const useProviderList = (): ProviderItem[] => {
       {
         ...Ai360ProviderCard,
         docUrl: urlJoin(BASE_DOC_URL, 'ai360'),
-        title: <Ai360.Combine size={ 20 } type={ 'color' } />,
+        title: <Ai360.Combine size={20} type={'color'} />,
       },
       {
         ...SiliconCloudProviderCard,

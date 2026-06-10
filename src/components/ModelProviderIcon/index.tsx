@@ -17,10 +17,10 @@ import {
   OpenAI,
   OpenRouter,
   Perplexity,
+  Qwen,
   SiliconCloud,
   Stepfun,
   Together,
-  Tongyi,
   ZeroOne,
   Zhipu,
 } from '@lobehub/icons';
@@ -112,7 +112,7 @@ const ModelProviderIcon = memo<ModelProviderIconProps>(({ provider }) => {
     }
 
     case ModelProvider.Qwen: {
-      return <Tongyi size={20} />;
+      return <Qwen size={20} />;
     }
 
     case ModelProvider.Stepfun: {
