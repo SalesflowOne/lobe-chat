@@ -196,6 +196,7 @@
   "tab": {
     "chat": "Chat",
     "files": "Files",
+    "integrations": "Connectors",
     "market": "Discover",
     "me": "Me",
     "setting": "Settings"

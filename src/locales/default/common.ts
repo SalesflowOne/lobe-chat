@@ -188,6 +188,7 @@ export default {
   tab: {
     chat: '会话',
     files: '文件',
+    integrations: 'Connectors',
     market: '发现',
     me: '我',
     setting: '设置',
