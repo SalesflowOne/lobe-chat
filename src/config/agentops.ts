@@ -2,11 +2,16 @@
 import { createEnv } from '@t3-oss/env-nextjs';
 import { z } from 'zod';
 
-/** Canonical AgentOps host — apex pathofsoler.com serves Twenty CRM. */
-export const DEFAULT_APP_HOST = 'agentops.pathofsoler.com';
+/** Canonical AgentOps / LobeChat host. pathofsoler.com apex serves Twenty CRM. */
+export const DEFAULT_APP_HOST = 'pathofsoler.one';
 
 /** Alternate hosts that also serve AgentOps on Vercel. */
-export const ALTERNATE_APP_HOSTS = ['app.pathofsoler.com', 'www.agentops.pathofsoler.com'] as const;
+export const ALTERNATE_APP_HOSTS = [
+  'www.pathofsoler.one',
+  'agentops.pathofsoler.com',
+  'app.pathofsoler.com',
+  'www.agentops.pathofsoler.com',
+] as const;
 
 export const AGENTOPS_ALLOWED_HOSTS = [DEFAULT_APP_HOST, ...ALTERNATE_APP_HOSTS] as const;
 
