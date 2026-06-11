@@ -2,22 +2,22 @@
 
 ## Locked decisions
 
-| Decision        | Choice                                                    |
-| --------------- | --------------------------------------------------------- |
-| CRM domain      | **pathofsoler.com** (Cloudflare DNS → Twenty CRM)         |
-| AgentOps domain | **app.pathofsoler.com** (Cloudflare DNS → Vercel)         |
-| Sign-in         | **On-domain** — `app.pathofsoler.com/login` and `/signup` |
-| Repo strategy   | **Evolve `lobe-chat` in place**                           |
-| Auth            | **Clerk multi-tenant** (Organizations)                    |
-| Integrations    | **Full Pipedream catalog** in UI (paginated + featured)   |
-| Artifacts       | **Vercel Sandbox** (isolated preview, future-proof)       |
-| Billing         | Internal-only until later phases                          |
+| Decision        | Choice                                                               |
+| --------------- | -------------------------------------------------------------------- |
+| CRM domain      | **pathofsoler.com** (Cloudflare DNS → self-hosted Twenty on Coolify) |
+| AgentOps domain | **agentops.pathofsoler.com** (Cloudflare DNS → Vercel)               |
+| Sign-in         | **On-domain** — `agentops.pathofsoler.com/login` and `/signup`       |
+| Repo strategy   | **Evolve `lobe-chat` in place**                                      |
+| Auth            | **Clerk multi-tenant** (Organizations)                               |
+| Integrations    | **Full Pipedream catalog** in UI (paginated + featured)              |
+| Artifacts       | **Vercel Sandbox** (isolated preview, future-proof)                  |
+| Billing         | Internal-only until later phases                                     |
 
 ## Architecture
 
 ```
-pathofsoler.com → Twenty CRM (custom-domain.twenty.com)
-app.pathofsoler.com → AgentOps (Vercel)
+pathofsoler.com → Twenty CRM (self-hosted on Coolify, crm.nebulis.one server)
+agentops.pathofsoler.com → AgentOps (Vercel)
   ├── Clerk auth on-domain (/login, /signup) + Organizations
   ├── Pipedream Connect + MCP
   ├── Integrations catalog (/integrations)
@@ -30,29 +30,19 @@ app.pathofsoler.com → AgentOps (Vercel)
 
 ### pathofsoler.com (Cloudflare zone `36ca0956c4139d015cbfb35d1297baa0`) — Twenty CRM
 
-| Record            | Value                         | Proxy    |
-| ----------------- | ----------------------------- | -------- |
-| `pathofsoler.com` | `custom-domain.twenty.com`    | DNS only |
-| `www` CNAME       | `custom-domain.twenty.com`    | DNS only |
-| `app` CNAME       | `cname.vercel-dns.com`        | DNS only |
-| `clerk` CNAME     | `frontend-api.clerk.services` | DNS only |
+Twenty is **self-hosted** on Coolify (`twenty-os` app), not Twenty Cloud. Do **not** CNAME to `custom-domain.twenty.com`.
 
-Configure the custom domain in Twenty: **Settings → General → Workspace Domain**.
+| Record                       | Value                         | Proxy    |
+| ---------------------------- | ----------------------------- | -------- |
+| `pathofsoler.com` A          | `5.161.72.226`                | DNS only |
+| `www.pathofsoler.com` A      | `5.161.72.226`                | DNS only |
+| `agentops.pathofsoler.com` A | `76.76.21.21`                 | DNS only |
+| `clerk.agentops` CNAME       | `frontend-api.clerk.services` | DNS only |
 
-#### Twenty custom domain setup order (fixes Cloudflare Error 1014)
+Coolify app domains: `crm.nebulis.one`, `pathofsoler.com`, `www.pathofsoler.com`.\
+Twenty env: `SERVER_URL=https://pathofsoler.com`, `FRONTEND_URL=https://pathofsoler.com`.
 
-Cloudflare **Error 1014 (CNAME Cross-User Banned)** happens when `pathofsoler.com` CNAMEs to `custom-domain.twenty.com` **before** Twenty registers your domain on their Cloudflare for SaaS side.
-
-**Correct order:**
-
-1.  In Twenty: **Settings → General → Workspace Domain → Customize Domain** → enter `pathofsoler.com` and save.
-2.  Wait until Twenty shows the domain as verified / active (can take a few minutes).
-3.  In Cloudflare, replace the temporary Vercel A record with:
-    - `pathofsoler.com` → CNAME `custom-domain.twenty.com` (**DNS only**, grey cloud)
-    - `www` → CNAME `custom-domain.twenty.com` (**DNS only**)
-4.  Remove the temporary Vercel redirects for `pathofsoler.com` / `www` from `vercel.json`.
-
-**While waiting for step 2**, apex DNS points at Vercel and redirects to `https://pathofsoler.twenty.com` so the domain is not stuck on 1014.
+`app.pathofsoler.com` is reserved/broken in Cloudflare (NXDOMAIN) — use `agentops.pathofsoler.com` for AgentOps.
 
 ### pathofsoler.one (Cloudflare zone `2891c72ffe12c88e336609975deca699`)
 
@@ -68,12 +58,15 @@ Cloudflare **Error 1014 (CNAME Cross-User Banned)** happens when `pathofsoler.co
 
 ### Vercel domains on `lobe-chat`
 
-- `app.pathofsoler.com`, `www.app.pathofsoler.com`
+- `agentops.pathofsoler.com` (production AgentOps)
+- `app.pathofsoler.com` redirects to `agentops` in `vercel.json` (DNS broken; do not use)
+
+`pathofsoler.com` and `www.pathofsoler.com` are **not** on Vercel — they point at the Coolify Twenty server.
 
 ## Required environment variables
 
 ```env
-NEXT_PUBLIC_AGENTOPS_APP_URL=https://app.pathofsoler.com
+NEXT_PUBLIC_AGENTOPS_APP_URL=https://agentops.pathofsoler.com
 NEXT_PUBLIC_AGENTOPS_PRODUCT_NAME=AgentOps
 NEXT_PUBLIC_SERVICE_MODE=server
 DATABASE_URL=...
