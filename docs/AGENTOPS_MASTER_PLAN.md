@@ -39,6 +39,21 @@ app.pathofsoler.com → AgentOps (Vercel)
 
 Configure the custom domain in Twenty: **Settings → General → Workspace Domain**.
 
+#### Twenty custom domain setup order (fixes Cloudflare Error 1014)
+
+Cloudflare **Error 1014 (CNAME Cross-User Banned)** happens when `pathofsoler.com` CNAMEs to `custom-domain.twenty.com` **before** Twenty registers your domain on their Cloudflare for SaaS side.
+
+**Correct order:**
+
+1.  In Twenty: **Settings → General → Workspace Domain → Customize Domain** → enter `pathofsoler.com` and save.
+2.  Wait until Twenty shows the domain as verified / active (can take a few minutes).
+3.  In Cloudflare, replace the temporary Vercel A record with:
+    - `pathofsoler.com` → CNAME `custom-domain.twenty.com` (**DNS only**, grey cloud)
+    - `www` → CNAME `custom-domain.twenty.com` (**DNS only**)
+4.  Remove the temporary Vercel redirects for `pathofsoler.com` / `www` from `vercel.json`.
+
+**While waiting for step 2**, apex DNS points at Vercel and redirects to `https://pathofsoler.twenty.com` so the domain is not stuck on 1014.
+
 ### pathofsoler.one (Cloudflare zone `2891c72ffe12c88e336609975deca699`)
 
 | Record            | Value                      | Proxy    |

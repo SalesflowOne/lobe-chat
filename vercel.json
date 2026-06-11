@@ -11,6 +11,18 @@
       "has": [{ "type": "host", "value": "www.app.pathofsoler.com" }],
       "destination": "https://app.pathofsoler.com/:path*",
       "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "pathofsoler.com" }],
+      "destination": "https://pathofsoler.twenty.com/:path*",
+      "permanent": false
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.pathofsoler.com" }],
+      "destination": "https://pathofsoler.twenty.com/:path*",
+      "permanent": false
     }
   ]
 }
