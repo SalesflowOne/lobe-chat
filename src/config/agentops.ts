@@ -2,15 +2,11 @@
 import { createEnv } from '@t3-oss/env-nextjs';
 import { z } from 'zod';
 
-/** Canonical production host — sign-in and app URLs use this domain. */
-export const DEFAULT_APP_HOST = 'pathofsoler.com';
+/** Canonical AgentOps host — apex pathofsoler.com serves Twenty CRM. */
+export const DEFAULT_APP_HOST = 'app.pathofsoler.com';
 
-/** Alternate hosts that also serve the app (redirected to canonical in production). */
-export const ALTERNATE_APP_HOSTS = [
-  'www.pathofsoler.com',
-  'pathofsoler.one',
-  'www.pathofsoler.one',
-] as const;
+/** Alternate hosts that also serve AgentOps on Vercel. */
+export const ALTERNATE_APP_HOSTS = ['www.app.pathofsoler.com'] as const;
 
 export const AGENTOPS_ALLOWED_HOSTS = [DEFAULT_APP_HOST, ...ALTERNATE_APP_HOSTS] as const;
 

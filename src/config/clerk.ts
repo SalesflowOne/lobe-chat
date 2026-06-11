@@ -16,7 +16,7 @@ export const getAppOrigin = (): string => {
   return `https://${DEFAULT_APP_HOST}`;
 };
 
-/** Relative auth paths keep sign-in on whichever host served the page (Vercel preview, pathofsoler.com, etc.). */
+/** Relative auth paths keep sign-in on whichever host served the page (Vercel preview, app.pathofsoler.com, etc.). */
 export const CLERK_AUTH_PATHS = {
   signInUrl: '/login',
   signUpUrl: '/signup',
@@ -79,7 +79,7 @@ export const clerkSatelliteEnv = getClerkSatelliteConfig();
 
 /**
  * Satellite mode is opt-in only (e.g. sharing auth with a separate primary Clerk app).
- * Default: primary Clerk on pathofsoler.com — sign-in never leaves the domain.
+ * Default: primary Clerk on app.pathofsoler.com — sign-in never leaves the domain.
  */
 export const isClerkSatelliteReady = (): boolean =>
   Boolean(
