@@ -8,20 +8,44 @@
   "redirects": [
     {
       "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.agentcloud.one" }],
+      "destination": "https://agentcloud.one/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
       "has": [{ "type": "host", "value": "www.pathofsoler.one" }],
-      "destination": "https://pathofsoler.one/:path*",
+      "destination": "https://agentcloud.one/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "pathofsoler.one" }],
+      "destination": "https://agentcloud.one/:path*",
       "permanent": true
     },
     {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "www.pathofsoler.com" }],
-      "destination": "https://pathofsoler.one/:path*",
+      "destination": "https://agentcloud.one/:path*",
       "permanent": true
     },
     {
       "source": "/:path*",
       "has": [{ "type": "host", "value": "pathofsoler.com" }],
-      "destination": "https://pathofsoler.one/:path*",
+      "destination": "https://agentcloud.one/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "agentops.pathofsoler.com" }],
+      "destination": "https://agentcloud.one/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "app.pathofsoler.com" }],
+      "destination": "https://agentcloud.one/:path*",
       "permanent": true
     }
   ]

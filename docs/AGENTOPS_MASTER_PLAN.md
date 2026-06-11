@@ -1,14 +1,14 @@
-# AgentOps Master Plan v3 — pathofsoler.one
+# AgentOps Master Plan v3 — agentcloud.one
 
 ## Locked decisions
 
 | Decision         | Choice                                                  |
 | ---------------- | ------------------------------------------------------- |
-| Canonical domain | **pathofsoler.one** (Cloudflare DNS → Vercel)           |
-| Alternate domain | **pathofsoler.com** redirects → pathofsoler.one         |
-| Sign-in          | **On-domain** — `pathofsoler.one/login` and `/signup`   |
+| Canonical domain | **agentcloud.one** (Cloudflare DNS → Vercel)           |
+| Legacy domains   | `pathofsoler.one`, `pathofsoler.com` → redirect         |
+| Sign-in          | **On-domain** — `agentcloud.one/login` and `/signup`      |
 | Repo strategy    | **Evolve `lobe-chat` in place**                         |
-| Auth             | **Clerk multi-tenant** (Organizations)                  |
+| Auth             | **Supabase Auth**                                       |
 | Integrations     | **Full Pipedream catalog** in UI (paginated + featured) |
 | Artifacts        | **Vercel Sandbox** (isolated preview, future-proof)     |
 | Billing          | Internal-only until later phases                        |
@@ -16,9 +16,9 @@
 ## Architecture
 
 ```
-pathofsoler.one (canonical)
-  ├── pathofsoler.com → 301 redirect
-  ├── Clerk auth on-domain (/login, /signup) + Organizations
+agentcloud.one (canonical)
+  ├── pathofsoler.one / pathofsoler.com → 301 redirect
+  ├── Supabase auth on-domain (/login, /signup)
   ├── Pipedream Connect + MCP
   ├── Integrations catalog (/integrations)
   ├── Agent chat + MCP tool router
@@ -28,45 +28,41 @@ pathofsoler.one (canonical)
 
 ## DNS
 
-### pathofsoler.one (Cloudflare zone `2891c72ffe12c88e336609975deca699`)
+### agentcloud.one (Cloudflare zone `fee398b55ffedf87e9e7062853171771`) — AgentOps / LobeChat
 
-| Record              | Value                  | Proxy    |
-| ------------------- | ---------------------- | -------- |
-| `pathofsoler.one` A | `76.76.21.21`          | DNS only |
-| `www` CNAME         | `cname.vercel-dns.com` | DNS only |
+| Record                  | Value                              | Proxy    |
+| ----------------------- | ---------------------------------- | -------- |
+| `agentcloud.one` A      | `216.198.79.1` (Vercel)            | DNS only |
+| `www.agentcloud.one`    | `8c77c1e216f721f1.vercel-dns-017.com` (CNAME) | DNS only |
 
-**Nameservers** (set at your registrar if zone is still pending):
+**Nameservers** (active):
 
 - `brynne.ns.cloudflare.com`
 - `carter.ns.cloudflare.com`
 
-### pathofsoler.com (existing zone)
+### pathofsoler.com (Twenty CRM — separate)
 
-| Record              | Value                  | Proxy    |
-| ------------------- | ---------------------- | -------- |
-| `pathofsoler.com` A | `76.76.21.21`          | DNS only |
-| `www` CNAME         | `cname.vercel-dns.com` | DNS only |
-
-Vercel redirects all `pathofsoler.com` and `www.*` traffic → `pathofsoler.one`.
+| Record              | Value         | Purpose        |
+| ------------------- | ------------- | -------------- |
+| `pathofsoler.com` A | `5.161.72.226` | Self-hosted CRM |
 
 ### Vercel domains on `lobe-chat`
 
-- `pathofsoler.one`, `www.pathofsoler.one`
-- `pathofsoler.com`, `www.pathofsoler.com`
+- `agentcloud.one`, `www.agentcloud.one`
+- Legacy redirects via `vercel.json`: `pathofsoler.one`, `pathofsoler.com`, `agentops.pathofsoler.com`
 
 ## Required environment variables
 
 ```env
-NEXT_PUBLIC_AGENTOPS_APP_URL=https://pathofsoler.one
+NEXT_PUBLIC_AGENTOPS_APP_URL=https://agentcloud.one
 NEXT_PUBLIC_AGENTOPS_PRODUCT_NAME=AgentOps
 NEXT_PUBLIC_SERVICE_MODE=server
 DATABASE_URL=...
 KEY_VAULTS_SECRET=...
 
-# Clerk — primary on pathofsoler.one (no satellite vars unless intentional)
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
-CLERK_SECRET_KEY=sk_live_...
-CLERK_WEBHOOK_SECRET=whsec_...
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # Pipedream
 PIPEDREAM_CLIENT_ID=...
@@ -75,18 +71,17 @@ PIPEDREAM_PROJECT_ID=...
 PIPEDREAM_PROJECT_ENVIRONMENT=production
 ```
 
-### Clerk dashboard checklist
+### Supabase dashboard checklist
 
-1.  Add **both** `pathofsoler.one` and `pathofsoler.com` as production domains
-2.  Enable **Organizations**
-3.  Set sign-in/sign-up URLs to `https://pathofsoler.one/login` and `/signup`
-4.  Add allowed redirect origins for all app hosts
+1. Set site URL to `https://agentcloud.one`
+2. Add redirect URLs: `https://agentcloud.one/auth/callback`, `https://agentcloud.one/reset-password`
+3. Add preview URL wildcard if using Vercel previews: `https://*-salesflow.vercel.app/**`
 
 ## Key routes
 
 | Route            | Purpose                          |
 | ---------------- | -------------------------------- |
-| `/login`         | Clerk sign-in on pathofsoler.one |
-| `/signup`        | Clerk sign-up on pathofsoler.one |
+| `/login`         | Sign-in on agentcloud.one        |
+| `/signup`        | Sign-up on agentcloud.one        |
 | `/integrations`  | Connector catalog + connect      |
 | `/api/artifacts` | Vercel Sandbox artifact preview  |

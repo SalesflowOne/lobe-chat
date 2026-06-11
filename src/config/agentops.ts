@@ -3,13 +3,15 @@ import { createEnv } from '@t3-oss/env-nextjs';
 import { z } from 'zod';
 
 /** Canonical production host — sign-in and app URLs use this domain. */
-export const DEFAULT_APP_HOST = 'pathofsoler.one';
+export const DEFAULT_APP_HOST = 'agentcloud.one';
 
 /** Alternate hosts that also serve the app (redirected to canonical in production). */
 export const ALTERNATE_APP_HOSTS = [
   'pathofsoler.com',
   'www.pathofsoler.com',
+  'pathofsoler.one',
   'www.pathofsoler.one',
+  'www.agentcloud.one',
 ] as const;
 
 export const AGENTOPS_ALLOWED_HOSTS = [DEFAULT_APP_HOST, ...ALTERNATE_APP_HOSTS] as const;
