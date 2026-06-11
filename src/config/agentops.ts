@@ -75,5 +75,8 @@ export const getPipedreamExternalUserId = (params: {
 
 export const isAllowedAppHost = (host: string): boolean => {
   const normalized = host.split(',')[0].trim().toLowerCase();
-  return AGENTOPS_ALLOWED_HOSTS.some((h) => h.toLowerCase() === normalized);
+  if (AGENTOPS_ALLOWED_HOSTS.some((h) => h.toLowerCase() === normalized)) return true;
+
+  // Vercel preview and production deployment URLs (e.g. lobe-chat-*.vercel.app)
+  return normalized.endsWith('.vercel.app');
 };

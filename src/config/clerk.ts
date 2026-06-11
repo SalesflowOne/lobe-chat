@@ -16,7 +16,13 @@ export const getAppOrigin = (): string => {
   return `https://${DEFAULT_APP_HOST}`;
 };
 
-/** Auth stays on the app domain — /login and /signup on pathofsoler.one */
+/** Relative auth paths keep sign-in on whichever host served the page (Vercel preview, pathofsoler.one, etc.). */
+export const CLERK_AUTH_PATHS = {
+  signInUrl: '/login',
+  signUpUrl: '/signup',
+} as const;
+
+/** Absolute auth URLs for metadata, emails, and external redirects to the canonical domain. */
 export const getAgentOpsAuthUrls = () => {
   const origin = getAppOrigin();
 
@@ -93,10 +99,5 @@ export const getClerkProviderAuthUrls = () => {
     };
   }
 
-  const { signInUrl, signUpUrl } = getAgentOpsAuthUrls();
-
-  return {
-    signInUrl,
-    signUpUrl,
-  };
+  return CLERK_AUTH_PATHS;
 };

@@ -2,7 +2,7 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
 import { authEnv } from '@/config/auth';
-import { getAgentOpsAuthUrls } from '@/config/clerk';
+import { CLERK_AUTH_PATHS } from '@/config/clerk';
 import NextAuthEdge from '@/libs/next-auth/edge';
 
 import { OAUTH_AUTHORIZED } from './const/auth';
@@ -55,8 +55,6 @@ const isProtectedRoute = createRouteMatcher([
   // ↓ cloud ↓
 ]);
 
-const { signInUrl, signUpUrl } = getAgentOpsAuthUrls();
-
 export default authEnv.NEXT_PUBLIC_ENABLE_CLERK_AUTH
   ? clerkMiddleware(
       (auth, req) => {
@@ -65,8 +63,8 @@ export default authEnv.NEXT_PUBLIC_ENABLE_CLERK_AUTH
       {
         // https://github.com/lobehub/lobe-chat/pull/3084
         clockSkewInMs: 60 * 60 * 1000,
-        signInUrl,
-        signUpUrl,
+        signInUrl: CLERK_AUTH_PATHS.signInUrl,
+        signUpUrl: CLERK_AUTH_PATHS.signUpUrl,
       },
     )
   : authEnv.NEXT_PUBLIC_ENABLE_NEXT_AUTH

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { memo, useEffect } from 'react';
 
+import { enableClerk } from '@/const/auth';
 import { useUserStore } from '@/store/user';
 import { authSelectors } from '@/store/user/selectors';
 
@@ -24,7 +25,7 @@ const Redirect = memo(() => {
 
     // this mean user is definitely not login
     if (!isLogin) {
-      router.replace('/welcome');
+      router.replace(enableClerk ? '/login' : '/welcome');
       return;
     }
 

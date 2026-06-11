@@ -1,7 +1,7 @@
 'use client';
 
 import { useClerk, useUser } from '@clerk/nextjs';
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import { createStoreUpdater } from 'zustand-utils';
 
 import { useUserStore } from '@/store/user';
@@ -33,6 +33,17 @@ const UserUpdater = memo(() => {
   useStoreUpdater('clerkSignIn', openSignIn);
   useStoreUpdater('clerkOpenUserProfile', openUserProfile);
   useStoreUpdater('clerkSignOut', signOut);
+
+  // If Clerk fails to initialize (domain/key mismatch), avoid an infinite loading screen.
+  useEffect(() => {
+    if (isLoaded) return;
+
+    const timeout = setTimeout(() => {
+      useUserStore.setState({ isLoaded: true, isSignedIn: false });
+    }, 8000);
+
+    return () => clearTimeout(timeout);
+  }, [isLoaded]);
 
   return null;
 });
