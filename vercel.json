@@ -8,20 +8,20 @@
   "redirects": [
     {
       "source": "/:path*",
-      "has": [{ "type": "host", "value": "www.pathofsoler.one" }],
-      "destination": "https://pathofsoler.one/:path*",
-      "permanent": true
-    },
-    {
-      "source": "/:path*",
       "has": [{ "type": "host", "value": "www.pathofsoler.com" }],
-      "destination": "https://pathofsoler.one/:path*",
+      "destination": "https://pathofsoler.com/:path*",
       "permanent": true
     },
     {
       "source": "/:path*",
-      "has": [{ "type": "host", "value": "pathofsoler.com" }],
-      "destination": "https://pathofsoler.one/:path*",
+      "has": [{ "type": "host", "value": "www.pathofsoler.one" }],
+      "destination": "https://pathofsoler.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "pathofsoler.one" }],
+      "destination": "https://pathofsoler.com/:path*",
       "permanent": true
     }
   ]

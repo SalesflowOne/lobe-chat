@@ -1,12 +1,12 @@
-# AgentOps Master Plan v3 — pathofsoler.one
+# AgentOps Master Plan v3 — pathofsoler.com
 
 ## Locked decisions
 
 | Decision         | Choice                                                  |
 | ---------------- | ------------------------------------------------------- |
-| Canonical domain | **pathofsoler.one** (Cloudflare DNS → Vercel)           |
-| Alternate domain | **pathofsoler.com** redirects → pathofsoler.one         |
-| Sign-in          | **On-domain** — `pathofsoler.one/login` and `/signup`   |
+| Canonical domain | **pathofsoler.com** (Cloudflare DNS → Vercel)           |
+| Alternate domain | **pathofsoler.one** redirects → pathofsoler.com         |
+| Sign-in          | **On-domain** — `pathofsoler.com/login` and `/signup`   |
 | Repo strategy    | **Evolve `lobe-chat` in place**                         |
 | Auth             | **Clerk multi-tenant** (Organizations)                  |
 | Integrations     | **Full Pipedream catalog** in UI (paginated + featured) |
@@ -16,8 +16,8 @@
 ## Architecture
 
 ```
-pathofsoler.one (canonical)
-  ├── pathofsoler.com → 301 redirect
+pathofsoler.com (canonical)
+  ├── pathofsoler.one → 301 redirect
   ├── Clerk auth on-domain (/login, /signup) + Organizations
   ├── Pipedream Connect + MCP
   ├── Integrations catalog (/integrations)
@@ -47,7 +47,7 @@ pathofsoler.one (canonical)
 | `pathofsoler.com` A | `76.76.21.21`          | DNS only |
 | `www` CNAME         | `cname.vercel-dns.com` | DNS only |
 
-Vercel redirects all `pathofsoler.com` and `www.*` traffic → `pathofsoler.one`.
+Vercel redirects `pathofsoler.one`, `www.pathofsoler.one`, and `www.pathofsoler.com` → `pathofsoler.com`.
 
 ### Vercel domains on `lobe-chat`
 
@@ -57,13 +57,13 @@ Vercel redirects all `pathofsoler.com` and `www.*` traffic → `pathofsoler.one`
 ## Required environment variables
 
 ```env
-NEXT_PUBLIC_AGENTOPS_APP_URL=https://pathofsoler.one
+NEXT_PUBLIC_AGENTOPS_APP_URL=https://pathofsoler.com
 NEXT_PUBLIC_AGENTOPS_PRODUCT_NAME=AgentOps
 NEXT_PUBLIC_SERVICE_MODE=server
 DATABASE_URL=...
 KEY_VAULTS_SECRET=...
 
-# Clerk — primary on pathofsoler.one (no satellite vars unless intentional)
+# Clerk — primary on pathofsoler.com (no satellite vars unless intentional)
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
 CLERK_SECRET_KEY=sk_live_...
 CLERK_WEBHOOK_SECRET=whsec_...
@@ -79,14 +79,14 @@ PIPEDREAM_PROJECT_ENVIRONMENT=production
 
 1.  Add **both** `pathofsoler.one` and `pathofsoler.com` as production domains
 2.  Enable **Organizations**
-3.  Set sign-in/sign-up URLs to `https://pathofsoler.one/login` and `/signup`
+3.  Set sign-in/sign-up URLs to `https://pathofsoler.com/login` and `/signup`
 4.  Add allowed redirect origins for all app hosts
 
 ## Key routes
 
 | Route            | Purpose                          |
 | ---------------- | -------------------------------- |
-| `/login`         | Clerk sign-in on pathofsoler.one |
-| `/signup`        | Clerk sign-up on pathofsoler.one |
+| `/login`         | Clerk sign-in on pathofsoler.com |
+| `/signup`        | Clerk sign-up on pathofsoler.com |
 | `/integrations`  | Connector catalog + connect      |
 | `/api/artifacts` | Vercel Sandbox artifact preview  |
