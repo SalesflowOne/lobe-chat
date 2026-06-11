@@ -6,7 +6,7 @@ export const userAuth = trpc.middleware(async (opts) => {
   const { ctx } = opts;
   // `ctx.user` is nullable
   if (!ctx.userId) {
-    console.log('clerk auth:', ctx.clerkAuth);
+    // userId is resolved from Supabase session in createContext
     throw new TRPCError({ code: 'UNAUTHORIZED' });
   }
 

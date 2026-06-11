@@ -16,10 +16,10 @@ export const useCategory = () => {
   const router = useRouter();
   const { canInstall, install } = usePWAInstall();
   const { t } = useTranslation(['common', 'setting', 'auth']);
-  const [isLogin, isLoginWithAuth, isLoginWithClerk, enableAuth] = useUserStore((s) => [
+  const [isLogin, isLoginWithAuth, isLoginWithSupabase, enableAuth] = useUserStore((s) => [
     authSelectors.isLogin(s),
     authSelectors.isLoginWithAuth(s),
-    authSelectors.isLoginWithClerk(s),
+    authSelectors.isLoginWithSupabase(s),
     authSelectors.enabledAuth(s),
   ]);
 
@@ -104,7 +104,7 @@ export const useCategory = () => {
     {
       type: 'divider',
     },
-    ...(isLoginWithClerk ? profile : []),
+    ...(isLoginWithSupabase ? profile : []),
     ...(enableAuth ? (isLoginWithAuth ? settings : []) : settingsWithoutAuth),
     /* ↓ cloud slot ↓ */
 

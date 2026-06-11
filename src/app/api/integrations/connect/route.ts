@@ -1,16 +1,18 @@
-import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
 import { getPipedreamExternalUserId } from '@/config/agentops';
-import { getAllowedOrigins, resolveAppOriginFromRequest } from '@/config/clerk';
+import { getAllowedOrigins, resolveAppOriginFromRequest } from '@/config/auth-paths';
 import { isPipedreamConfigured } from '@/config/pipedream';
 import { getPipedreamClient } from '@/server/pipedream/client';
+import { requireServerAuthUserId } from '@/server/auth/getServerUser';
 
 export const runtime = 'nodejs';
 
 export const POST = async (req: Request) => {
-  const { orgId, userId } = await auth();
-  if (!userId) {
+  let userId: string;
+  try {
+    userId = await requireServerAuthUserId();
+  } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -25,7 +27,7 @@ export const POST = async (req: Request) => {
     return NextResponse.json({ error: 'appSlug is required' }, { status: 400 });
   }
 
-  const externalUserId = getPipedreamExternalUserId({ orgId, userId });
+  const externalUserId = getPipedreamExternalUserId({ userId });
   const client = getPipedreamClient();
   const appOrigin = resolveAppOriginFromRequest(req);
 
@@ -38,10 +40,5 @@ export const POST = async (req: Request) => {
   const connectUrl = new URL(tokenResponse.connectLinkUrl);
   connectUrl.searchParams.set('app', appSlug);
 
-  return NextResponse.json({
-    appSlug,
-    connectLink: connectUrl.toString(),
-    expiresAt: tokenResponse.expiresAt,
-    externalUserId,
-  });
+  return NextResponse.json({ connectUrl: connectUrl.toString() });
 };

@@ -1,5 +1,6 @@
-import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
+
+import { requireServerAuthUserId } from '@/server/auth/getServerUser';
 
 import { agentOpsEnv } from '@/config/agentops';
 import { isPipedreamConfigured } from '@/config/pipedream';
@@ -8,8 +9,9 @@ import { fetchFeaturedIntegrationApps, listIntegrationAppsPage } from '@/server/
 export const runtime = 'nodejs';
 
 export const GET = async (req: Request) => {
-  const { userId } = await auth();
-  if (!userId) {
+  try {
+    await requireServerAuthUserId();
+  } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

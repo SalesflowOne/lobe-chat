@@ -1,0 +1,18 @@
+import { NextResponse } from 'next/server';
+
+import { APP_ID } from '@/config/supabase';
+import { AppAccessModel } from '@/database/server/models/appAccess';
+import { getServerAuthUserId } from '@/server/auth/getServerUser';
+
+export const runtime = 'nodejs';
+
+export const GET = async (request: Request) => {
+  const userId = await getServerAuthUserId();
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const appId = searchParams.get('appId') ?? APP_ID;
+  const hasAccess = await AppAccessModel.hasAccess(userId, appId);
+
+  return NextResponse.json({ hasAccess });
+};

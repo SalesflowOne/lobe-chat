@@ -1,18 +1,13 @@
 import { StateCreator } from 'zustand/vanilla';
 
-import { enableClerk } from '@/const/auth';
+import { AUTH_PATHS } from '@/config/auth-paths';
+import { enableSupabaseAuth } from '@/const/auth';
 
 import { UserStore } from '../../store';
 
 export interface UserAuthAction {
   enableAuth: () => boolean;
-  /**
-   * universal logout method
-   */
   logout: () => Promise<void>;
-  /**
-   * universal login method
-   */
   openLogin: () => Promise<void>;
   openUserProfile: () => Promise<void>;
 }
@@ -24,12 +19,12 @@ export const createAuthSlice: StateCreator<
   UserAuthAction
 > = (set, get) => ({
   enableAuth: () => {
-    return enableClerk || get()?.enabledNextAuth || false;
+    return enableSupabaseAuth || get()?.enabledNextAuth || false;
   },
   logout: async () => {
-    if (enableClerk) {
-      get().clerkSignOut?.({ redirectUrl: location.toString() });
-
+    if (enableSupabaseAuth) {
+      await get().supabaseSignOut?.();
+      window.location.href = AUTH_PATHS.signInUrl;
       return;
     }
 
@@ -40,16 +35,15 @@ export const createAuthSlice: StateCreator<
     }
   },
   openLogin: async () => {
-    if (enableClerk) {
-      get().clerkSignIn?.({ fallbackRedirectUrl: location.toString() });
-
+    if (enableSupabaseAuth) {
+      const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.href = `${AUTH_PATHS.signInUrl}?redirect=${redirect}`;
       return;
     }
 
     const enableNextAuth = get().enabledNextAuth;
     if (enableNextAuth) {
       const { signIn } = await import('next-auth/react');
-      // Check if only one provider is available
       const providers = get()?.oAuthSSOProviders;
       if (providers && providers.length === 1) {
         signIn(providers[0]);
@@ -60,9 +54,8 @@ export const createAuthSlice: StateCreator<
   },
 
   openUserProfile: async () => {
-    if (enableClerk) {
-      get().clerkOpenUserProfile?.();
-
+    if (enableSupabaseAuth) {
+      window.location.href = AUTH_PATHS.profileUrl;
       return;
     }
   },

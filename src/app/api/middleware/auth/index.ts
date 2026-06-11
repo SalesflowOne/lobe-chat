@@ -1,10 +1,7 @@
-import { AuthObject } from '@clerk/backend';
-import { getAuth } from '@clerk/nextjs/server';
-import { NextRequest } from 'next/server';
-
 import { createErrorResponse } from '@/app/api/errorResponse';
-import { JWTPayload, LOBE_CHAT_AUTH_HEADER, OAUTH_AUTHORIZED, enableClerk } from '@/const/auth';
+import { JWTPayload, LOBE_CHAT_AUTH_HEADER, OAUTH_AUTHORIZED, enableSupabaseAuth } from '@/const/auth';
 import { AgentRuntime, AgentRuntimeError, ChatCompletionErrorPayload } from '@/libs/agent-runtime';
+import { getServerAuthUserId } from '@/server/auth/getServerUser';
 import { ChatErrorType } from '@/types/fetch';
 
 import { checkAuthMethod, getJWTPayload } from './utils';
@@ -25,17 +22,15 @@ export const checkAuth =
     let jwtPayload: JWTPayload;
 
     try {
-      // get Authorization from header
       const authorization = req.headers.get(LOBE_CHAT_AUTH_HEADER);
       const oauthAuthorized = !!req.headers.get(OAUTH_AUTHORIZED);
 
       if (!authorization) throw AgentRuntimeError.createError(ChatErrorType.Unauthorized);
 
-      // check the Auth With payload and clerk auth
-      let clerkAuth = {} as AuthObject;
+      let authUserId: string | null = null;
 
-      if (enableClerk) {
-        clerkAuth = getAuth(req as NextRequest);
+      if (enableSupabaseAuth) {
+        authUserId = await getServerAuthUserId();
       }
 
       jwtPayload = await getJWTPayload(authorization);
@@ -43,7 +38,7 @@ export const checkAuth =
       checkAuthMethod({
         accessCode: jwtPayload.accessCode,
         apiKey: jwtPayload.apiKey,
-        clerkAuth,
+        authUserId,
         nextAuthAuthorized: oauthAuthorized,
       });
     } catch (e) {

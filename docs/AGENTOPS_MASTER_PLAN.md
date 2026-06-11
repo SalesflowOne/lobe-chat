@@ -8,7 +8,7 @@
 | AgentOps domain | **agentops.pathofsoler.com** (Cloudflare DNS → Vercel)               |
 | Sign-in         | **On-domain** — `agentops.pathofsoler.com/login` and `/signup`       |
 | Repo strategy   | **Evolve `lobe-chat` in place**                                      |
-| Auth            | **Clerk multi-tenant** (Organizations)                               |
+| Auth            | **Supabase Auth** (branded on-domain login/signup/profile)           |
 | Integrations    | **Full Pipedream catalog** in UI (paginated + featured)              |
 | Artifacts       | **Vercel Sandbox** (isolated preview, future-proof)                  |
 | Billing         | Internal-only until later phases                                     |
@@ -18,7 +18,7 @@
 ```
 pathofsoler.com → Twenty CRM (self-hosted on Coolify, crm.nebulis.one server)
 agentops.pathofsoler.com → AgentOps (Vercel)
-  ├── Clerk auth on-domain (/login, /signup) + Organizations
+  ├── Supabase Auth on-domain (/login, /signup, /profile)
   ├── Pipedream Connect + MCP
   ├── Integrations catalog (/integrations)
   ├── Agent chat + MCP tool router
@@ -37,7 +37,6 @@ Twenty is **self-hosted** on Coolify (`twenty-os` app), not Twenty Cloud. Do **n
 | `pathofsoler.com` A          | `5.161.72.226`                | DNS only |
 | `www.pathofsoler.com` A      | `5.161.72.226`                | DNS only |
 | `agentops.pathofsoler.com` A | `76.76.21.21`                 | DNS only |
-| `clerk.agentops` CNAME       | `frontend-api.clerk.services` | DNS only |
 
 Coolify app domains: `crm.nebulis.one`, `pathofsoler.com`, `www.pathofsoler.com`.\
 Twenty env: `SERVER_URL=https://pathofsoler.com`, `FRONTEND_URL=https://pathofsoler.com`.
@@ -72,10 +71,10 @@ NEXT_PUBLIC_SERVICE_MODE=server
 DATABASE_URL=...
 KEY_VAULTS_SECRET=...
 
-# Clerk — primary on app.pathofsoler.com (no satellite vars unless intentional)
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
-CLERK_SECRET_KEY=sk_live_...
-CLERK_WEBHOOK_SECRET=whsec_...
+# Supabase Auth
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # Pipedream
 PIPEDREAM_CLIENT_ID=...
@@ -84,18 +83,21 @@ PIPEDREAM_PROJECT_ID=...
 PIPEDREAM_PROJECT_ENVIRONMENT=production
 ```
 
-### Clerk dashboard checklist
+### Supabase Auth checklist
 
-1.  Add `app.pathofsoler.com` as a production domain
-2.  Enable **Organizations**
-3.  Set sign-in/sign-up URLs to `https://app.pathofsoler.com/login` and `/signup`
-4.  Add allowed redirect origins for all app hosts
+1.  Enable email/password auth in Supabase dashboard
+2.  Set site URL to `https://agentops.pathofsoler.com`
+3.  Add redirect URLs: `/auth/callback`, `/reset-password`
+4.  Run migration `0006_supabase_auth.sql` on the app database
 
 ## Key routes
 
 | Route            | Purpose                              |
 | ---------------- | ------------------------------------ |
-| `/login`         | Clerk sign-in on app.pathofsoler.com |
-| `/signup`        | Clerk sign-up on app.pathofsoler.com |
+| `/login`         | Branded sign-in (Supabase)           |
+| `/signup`        | Branded registration (Supabase)      |
+| `/forgot-password` | Password reset request             |
+| `/reset-password`  | Set new password after email link  |
+| `/profile`       | Account profile and sign-out         |
 | `/integrations`  | Connector catalog + connect          |
 | `/api/artifacts` | Vercel Sandbox artifact preview      |

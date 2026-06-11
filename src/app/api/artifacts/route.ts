@@ -1,14 +1,17 @@
-import { auth } from '@clerk/nextjs/server';
 import { nanoid } from 'nanoid';
 import { NextResponse } from 'next/server';
+
+import { requireServerAuthUserId } from '@/server/auth/getServerUser';
 
 import { deployArtifactToSandbox } from '@/server/artifacts/sandbox';
 
 export const runtime = 'nodejs';
 
 export const POST = async (req: Request) => {
-  const { orgId, userId } = await auth();
-  if (!userId) {
+  let userId: string;
+  try {
+    userId = await requireServerAuthUserId();
+  } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -27,7 +30,6 @@ export const POST = async (req: Request) => {
   return NextResponse.json({
     artifact: {
       id: nanoid(),
-      orgId,
       previewUrl: sandbox.previewUrl,
       sandboxId: sandbox.sandboxId,
       title: body.title ?? 'Untitled artifact',

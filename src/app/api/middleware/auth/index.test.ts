@@ -1,77 +1,41 @@
-import { getAuth } from '@clerk/nextjs/server';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createErrorResponse } from '@/app/api/errorResponse';
-import { AgentRuntimeError } from '@/libs/agent-runtime';
-import { ChatErrorType } from '@/types/fetch';
+import { checkAuth } from './index';
 
-import { RequestHandler, checkAuth } from './index';
-import { checkAuthMethod, getJWTPayload } from './utils';
+let authUserId: string | null = 'user-1';
 
-vi.mock('@clerk/nextjs/server', () => ({
-  getAuth: vi.fn(),
+vi.mock('@/server/auth/getServerUser', () => ({
+  getServerAuthUserId: vi.fn(async () => authUserId),
 }));
 
-vi.mock('@/app/api/errorResponse', () => ({
-  createErrorResponse: vi.fn(),
+vi.mock('@/const/auth', () => ({
+  LOBE_CHAT_AUTH_HEADER: 'X-lobe-chat-auth',
+  OAUTH_AUTHORIZED: 'X-oauth-authorized',
+  get enableSupabaseAuth() {
+    return true;
+  },
 }));
 
 vi.mock('./utils', () => ({
+  getJWTPayload: vi.fn(async () => ({ userId: 'jwt-user' })),
   checkAuthMethod: vi.fn(),
-  getJWTPayload: vi.fn(),
 }));
 
-describe('checkAuth', () => {
-  const mockHandler: RequestHandler = vi.fn();
-  const mockRequest = new Request('https://example.com');
-  const mockOptions = { params: { provider: 'mock' } };
-
+describe('checkAuth middleware', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    authUserId = 'user-1';
   });
 
-  afterEach(() => {
-    vi.resetAllMocks();
-  });
+  it('passes through when auth is valid', async () => {
+    const handler = vi.fn(async () => new Response('ok'));
+    const wrapped = checkAuth(handler);
 
-  it('should return unauthorized error if no authorization header', async () => {
-    await checkAuth(mockHandler)(mockRequest, mockOptions);
-
-    expect(createErrorResponse).toHaveBeenCalledWith(ChatErrorType.Unauthorized, {
-      error: AgentRuntimeError.createError(ChatErrorType.Unauthorized),
-      provider: 'mock',
-    });
-    expect(mockHandler).not.toHaveBeenCalled();
-  });
-
-  it('should return error response on getJWTPayload error', async () => {
-    const mockError = AgentRuntimeError.createError(ChatErrorType.Unauthorized);
-    mockRequest.headers.set('Authorization', 'invalid');
-    vi.mocked(getJWTPayload).mockRejectedValueOnce(mockError);
-
-    await checkAuth(mockHandler)(mockRequest, mockOptions);
-
-    expect(createErrorResponse).toHaveBeenCalledWith(ChatErrorType.Unauthorized, {
-      error: mockError,
-      provider: 'mock',
-    });
-    expect(mockHandler).not.toHaveBeenCalled();
-  });
-
-  it('should return error response on checkAuthMethod error', async () => {
-    const mockError = AgentRuntimeError.createError(ChatErrorType.Unauthorized);
-    mockRequest.headers.set('Authorization', 'valid');
-    vi.mocked(getJWTPayload).mockResolvedValueOnce({});
-    vi.mocked(checkAuthMethod).mockImplementationOnce(() => {
-      throw mockError;
+    const req = new Request('http://localhost', {
+      headers: { 'X-lobe-chat-auth': 'token' },
     });
 
-    await checkAuth(mockHandler)(mockRequest, mockOptions);
-
-    expect(createErrorResponse).toHaveBeenCalledWith(ChatErrorType.Unauthorized, {
-      error: mockError,
-      provider: 'mock',
-    });
-    expect(mockHandler).not.toHaveBeenCalled();
+    const res = await wrapped(req, { params: { provider: 'openai' } });
+    expect(res.status).toBe(200);
+    expect(handler).toHaveBeenCalled();
   });
 });

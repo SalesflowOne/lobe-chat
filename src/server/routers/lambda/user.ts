@@ -1,12 +1,11 @@
-import { UserJSON } from '@clerk/backend';
-import { currentUser } from '@clerk/nextjs/server';
 import { z } from 'zod';
 
-import { enableClerk } from '@/const/auth';
+import { enableSupabaseAuth } from '@/const/auth';
 import { MessageModel } from '@/database/server/models/message';
 import { SessionModel } from '@/database/server/models/session';
 import { UserModel, UserNotFoundError } from '@/database/server/models/user';
 import { authedProcedure, router } from '@/libs/trpc';
+import { getServerAuthUser } from '@/server/auth/getServerUser';
 import { UserService } from '@/server/services/user';
 import { UserInitializationState, UserPreference } from '@/types/user';
 
@@ -20,35 +19,15 @@ export const userRouter = router({
   getUserState: userProcedure.query(async ({ ctx }): Promise<UserInitializationState> => {
     let state: Awaited<ReturnType<UserModel['getUserState']>> | undefined;
 
-    // get or create first-time user
     while (!state) {
       try {
         state = await ctx.userModel.getUserState(ctx.userId);
       } catch (error) {
-        if (enableClerk && error instanceof UserNotFoundError) {
-          const user = await currentUser();
-          if (user) {
+        if (enableSupabaseAuth && error instanceof UserNotFoundError) {
+          const authUser = await getServerAuthUser();
+          if (authUser) {
             const userService = new UserService();
-
-            await userService.createUser(user.id, {
-              created_at: user.createdAt,
-              email_addresses: user.emailAddresses.map((e) => ({
-                email_address: e.emailAddress,
-                id: e.id,
-              })),
-              first_name: user.firstName,
-              id: user.id,
-              image_url: user.imageUrl,
-              last_name: user.lastName,
-              phone_numbers: user.phoneNumbers.map((e) => ({
-                id: e.id,
-                phone_number: e.phoneNumber,
-              })),
-              primary_email_address_id: user.primaryEmailAddressId,
-              primary_phone_number_id: user.primaryPhoneNumberId,
-              username: user.username,
-            } as UserJSON);
-
+            await userService.ensureUserFromSupabase(authUser);
             continue;
           }
         }
@@ -65,11 +44,8 @@ export const userRouter = router({
     return {
       canEnablePWAGuide: messageCount >= 2,
       canEnableTrace: messageCount >= 4,
-      // 有消息，或者创建过助手，则认为有 conversation
       hasConversation: messageCount > 0 || sessionCount > 1,
-
-      // always return true for community version
-      isOnboard: state.isOnboarded || true,
+      isOnboard: state.isOnboarded ?? false,
       preference: state.preference as UserPreference,
       settings: state.settings,
       userId: ctx.userId,
@@ -87,6 +63,23 @@ export const userRouter = router({
   updatePreference: userProcedure.input(z.any()).mutation(async ({ ctx, input }) => {
     return ctx.userModel.updatePreference(ctx.userId, input);
   }),
+
+  updateProfile: userProcedure
+    .input(
+      z.object({
+        avatar: z.string().optional(),
+        email: z.string().email().optional(),
+        firstName: z.string().optional(),
+        lastName: z.string().optional(),
+        phone: z.string().optional(),
+        username: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userService = new UserService();
+      await userService.updateProfile(ctx.userId, input);
+      return { success: true };
+    }),
 
   updateSettings: userProcedure
     .input(z.object({}).passthrough())

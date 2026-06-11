@@ -1,5 +1,6 @@
-import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
+
+import { requireServerAuthUserId } from '@/server/auth/getServerUser';
 
 import { getPipedreamExternalUserId } from '@/config/agentops';
 import { isPipedreamConfigured } from '@/config/pipedream';
@@ -8,8 +9,10 @@ import { getPipedreamClient } from '@/server/pipedream/client';
 export const runtime = 'nodejs';
 
 export const GET = async () => {
-  const { orgId, userId } = await auth();
-  if (!userId) {
+  let userId: string;
+  try {
+    userId = await requireServerAuthUserId();
+  } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -17,7 +20,7 @@ export const GET = async () => {
     return NextResponse.json({ accounts: [], configured: false });
   }
 
-  const externalUserId = getPipedreamExternalUserId({ orgId, userId });
+  const externalUserId = getPipedreamExternalUserId({ userId });
   const client = getPipedreamClient();
 
   const accounts: Array<{

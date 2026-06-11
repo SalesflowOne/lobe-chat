@@ -1,4 +1,5 @@
 export * from './agentops';
+export * from './auth';
 export * from './chat';
 export * from './discover';
 export * from './file';

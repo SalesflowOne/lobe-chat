@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { memo, useEffect } from 'react';
 
-import { enableClerk } from '@/const/auth';
+import { enableSupabaseAuth } from '@/const/auth';
 import { useUserStore } from '@/store/user';
 import { authSelectors } from '@/store/user/selectors';
 
@@ -20,31 +20,26 @@ const Redirect = memo(() => {
   );
 
   useEffect(() => {
-    // if user auth state is not ready, wait for loading
     if (!isLoaded) return;
 
-    // this mean user is definitely not login
     if (!isLogin) {
-      router.replace(enableClerk ? '/login' : '/welcome');
+      router.replace(enableSupabaseAuth ? '/login' : '/welcome');
       return;
     }
 
-    // if user state not init, wait for loading
     if (!isUserStateInit) return;
 
-    // user need to onboard
     if (!isOnboard) {
       router.replace('/onboard');
       return;
     }
 
-    // finally check the conversation status
     if (isUserHasConversation) {
       router.replace('/chat');
     } else {
       router.replace('/welcome');
     }
-  }, [isUserStateInit, isLoaded, isUserHasConversation, isOnboard, isLogin]);
+  }, [isUserStateInit, isLoaded, isUserHasConversation, isOnboard, isLogin, router]);
 
   return null;
 });

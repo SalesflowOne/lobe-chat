@@ -12,11 +12,9 @@ import { DEFAULT_PREFERENCE } from '@/const/user';
 import { createdAt, timestamptz, updatedAt } from './_helpers';
 
 /**
- * This table stores users. Users are created in Clerk, then Clerk calls a
- * webhook at /api/webhook/clerk to inform this application a user was created.
+ * App user record. Primary key is the Supabase auth.users.id UUID.
  */
 export const users = pgTable('users', {
-  // The ID will be the user's ID from Clerk
   id: text('id').primaryKey().notNull(),
   username: text('username').unique(),
   email: text('email'),
@@ -28,8 +26,7 @@ export const users = pgTable('users', {
   fullName: text('full_name'),
 
   isOnboarded: boolean('is_onboarded').default(false),
-  // Time user was created in Clerk
-  clerkCreatedAt: timestamptz('clerk_created_at'),
+  authCreatedAt: timestamptz('auth_created_at'),
 
   // Required by nextauth, all null allowed
   emailVerifiedAt: timestamptz('email_verified_at'),

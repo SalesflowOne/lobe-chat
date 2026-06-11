@@ -73,10 +73,10 @@ export const useMenu = () => {
   const openSettings = useOpenSettings();
   const { t } = useTranslation(['common', 'setting', 'auth']);
   const { showCloudPromotion } = useServerConfigStore(featureFlagsSelectors);
-  const [isLogin, isLoginWithAuth, isLoginWithClerk, openUserProfile] = useUserStore((s) => [
+  const [isLogin, isLoginWithAuth, isLoginWithSupabase, openUserProfile] = useUserStore((s) => [
     authSelectors.isLogin(s),
     authSelectors.isLoginWithAuth(s),
-    authSelectors.isLoginWithClerk(s),
+    authSelectors.isLoginWithSupabase(s),
     s.openUserProfile,
   ]);
 
@@ -236,7 +236,7 @@ export const useMenu = () => {
       type: 'divider',
     },
     ...(isLogin ? settings : []),
-    ...(isLoginWithClerk ? profile : []),
+    ...(isLoginWithSupabase ? profile : []),
     /* ↓ cloud slot ↓ */
 
     /* ↑ cloud slot ↑ */

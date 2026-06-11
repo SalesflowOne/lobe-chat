@@ -1,42 +1,38 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
 import { authEnv } from '@/config/auth';
-import { CLERK_AUTH_PATHS } from '@/config/clerk';
+import { updateSupabaseSession } from '@/libs/supabase/middleware';
 import NextAuthEdge from '@/libs/next-auth/edge';
 
 import { OAUTH_AUTHORIZED } from './const/auth';
 
 export const config = {
   matcher: [
-    // include any files in the api or trpc folders that might have an extension
     '/(api|trpc)(.*)',
-    // include the /
     '/',
     '/chat(.*)',
     '/settings(.*)',
     '/integrations',
     '/integrations/(.*)',
     '/artifacts(.*)',
-    // ↓ cloud ↓
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/reset-password',
+    '/profile(.*)',
+    '/onboard',
+    '/auth/callback',
   ],
 };
 
 const defaultMiddleware = () => NextResponse.next();
 
-// Initialize an Edge compatible NextAuth middleware
 const nextAuthMiddleware = NextAuthEdge.auth((req) => {
-  // skip the '/' route
   if (req.nextUrl.pathname === '/') return NextResponse.next();
 
-  // Just check if session exists
   const session = req.auth;
-
-  // Check if next-auth throws errors
-  // refs: https://github.com/lobehub/lobe-chat/pull/1323
   const isLoggedIn = !!session?.expires;
 
-  // Remove & amend OAuth authorized header
   const requestHeaders = new Headers(req.headers);
   requestHeaders.delete(OAUTH_AUTHORIZED);
   if (isLoggedIn) requestHeaders.set(OAUTH_AUTHORIZED, 'true');
@@ -48,32 +44,8 @@ const nextAuthMiddleware = NextAuthEdge.auth((req) => {
   });
 });
 
-const isProtectedRoute = createRouteMatcher([
-  '/settings(.*)',
-  '/integrations(.*)',
-  '/artifacts(.*)',
-  // ↓ cloud ↓
-]);
-
-export default authEnv.NEXT_PUBLIC_ENABLE_CLERK_AUTH
-  ? clerkMiddleware(
-      (auth, req) => {
-        const { userId } = auth();
-
-        // Skip the home-page spinner for signed-out visitors.
-        if (req.nextUrl.pathname === '/' && !userId) {
-          return NextResponse.redirect(new URL(CLERK_AUTH_PATHS.signInUrl, req.url));
-        }
-
-        if (isProtectedRoute(req)) auth().protect();
-      },
-      {
-        // https://github.com/lobehub/lobe-chat/pull/3084
-        clockSkewInMs: 60 * 60 * 1000,
-        signInUrl: CLERK_AUTH_PATHS.signInUrl,
-        signUpUrl: CLERK_AUTH_PATHS.signUpUrl,
-      },
-    )
+export default authEnv.NEXT_PUBLIC_ENABLE_SUPABASE_AUTH
+  ? updateSupabaseSession
   : authEnv.NEXT_PUBLIC_ENABLE_NEXT_AUTH
     ? nextAuthMiddleware
     : defaultMiddleware;

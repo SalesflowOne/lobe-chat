@@ -1,26 +1,13 @@
 'use client';
 
-import { OrganizationSwitcher as ClerkOrganizationSwitcher } from '@clerk/nextjs';
 import { memo } from 'react';
 
 /**
- * Multi-tenant workspace switcher. Connections and MCP context are scoped
- * to the active Clerk organization when one is selected.
+ * Workspace switcher placeholder — future OneAccess organizations will plug in here.
+ * Integrations are currently scoped to the authenticated Supabase user.
  */
 const OrganizationSwitcher = memo(() => {
-  return (
-    <ClerkOrganizationSwitcher
-      afterCreateOrganizationUrl="/integrations"
-      afterLeaveOrganizationUrl="/integrations"
-      afterSelectOrganizationUrl="/integrations"
-      appearance={{
-        elements: {
-          rootBox: { display: 'flex', justifyContent: 'flex-end' },
-        },
-      }}
-      hidePersonal={false}
-    />
-  );
+  return null;
 });
 
 OrganizationSwitcher.displayName = 'OrganizationSwitcher';

@@ -1,5 +1,4 @@
 // @vitest-environment node
-import { getAuth } from '@clerk/nextjs/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { checkAuthMethod, getJWTPayload } from '@/app/api/middleware/auth/utils';
@@ -9,8 +8,8 @@ import { ChatErrorType } from '@/types/fetch';
 
 import { POST } from './route';
 
-vi.mock('@clerk/nextjs/server', () => ({
-  getAuth: vi.fn(),
+vi.mock('@/server/auth/getServerUser', () => ({
+  getServerAuthUserId: vi.fn(async () => 'user-1'),
 }));
 
 vi.mock('../../middleware/auth/utils', () => ({
@@ -19,15 +18,14 @@ vi.mock('../../middleware/auth/utils', () => ({
 }));
 
 // 定义一个变量来存储 enableAuth 的值
-let enableClerk = false;
+let enableSupabaseAuth = false;
 
-// 模拟 @/const/auth 模块
 vi.mock('@/const/auth', async (importOriginal) => {
   const modules = await importOriginal();
   return {
     ...(modules as any),
-    get enableClerk() {
-      return enableClerk;
+    get enableSupabaseAuth() {
+      return enableSupabaseAuth;
     },
   };
 });
@@ -48,7 +46,7 @@ beforeEach(() => {
 afterEach(() => {
   // 清除模拟调用历史
   vi.clearAllMocks();
-  enableClerk = false;
+  enableSupabaseAuth = false;
 });
 
 describe('POST handler', () => {
@@ -97,8 +95,8 @@ describe('POST handler', () => {
       });
     });
 
-    it('should have pass clerk Auth when enable clerk', async () => {
-      enableClerk = true;
+    it('should pass Supabase auth when enabled', async () => {
+      enableSupabaseAuth = true;
 
       vi.mocked(getJWTPayload).mockResolvedValueOnce({
         accessCode: 'test-access-code',
@@ -107,8 +105,6 @@ describe('POST handler', () => {
       });
 
       const mockParams = { provider: 'test-provider' };
-      // 设置 initAgentRuntimeWithUserPayload 的模拟返回值
-      vi.mocked(getAuth).mockReturnValue({} as any);
       vi.mocked(checkAuthMethod).mockReset();
 
       const mockRuntime: LobeRuntimeAI = { baseURL: 'abc', chat: vi.fn() };
@@ -131,7 +127,7 @@ describe('POST handler', () => {
       expect(checkAuthMethod).toBeCalledWith({
         accessCode: 'test-access-code',
         apiKey: 'test-api-key',
-        clerkAuth: {},
+        authUserId: 'user-1',
         nextAuthAuthorized: true,
       });
     });

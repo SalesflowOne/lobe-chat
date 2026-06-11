@@ -1,96 +1,99 @@
-import { UserJSON } from '@clerk/backend';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
+import { AppAccessModel } from '@/database/server/models/appAccess';
+import { ProfileModel } from '@/database/server/models/profile';
 import { UserModel } from '@/database/server/models/user';
+import { UserRoleModel } from '@/database/server/models/userRole';
 import { pino } from '@/libs/logger';
 
 export class UserService {
-  createUser = async (id: string, params: UserJSON) => {
-    pino.info('creating user due to clerk webhook');
+  ensureUserFromSupabase = async (user: SupabaseUser) => {
+    const existing = await UserModel.findById(user.id);
+    if (existing) return existing;
 
-    // Check if user already exists
-    const res = await UserModel.findById(id);
+    pino.info('creating user from Supabase auth session');
 
-    // If user already exists, skip creating a new user
-    if (res)
-      return NextResponse.json(
-        {
-          message: 'user not created due to user already existing in the database',
-          success: false,
-        },
-        { status: 200 },
-      );
+    const meta = user.user_metadata ?? {};
+    const firstName = (meta.first_name as string | undefined) ?? undefined;
+    const lastName = (meta.last_name as string | undefined) ?? undefined;
+    const displayName =
+      (meta.display_name as string | undefined) ||
+      [firstName, lastName].filter(Boolean).join(' ') ||
+      undefined;
 
-    const email = params.email_addresses.find((e) => e.id === params.primary_email_address_id);
-    const phone = params.phone_numbers.find((e) => e.id === params.primary_phone_number_id);
-
-    /* ↓ cloud slot ↓ */
-
-    /* ↑ cloud slot ↑ */
-
-    // 2. create user in database
     await UserModel.createUser({
-      avatar: params.image_url,
-      clerkCreatedAt: new Date(params.created_at),
-      email: email?.email_address,
-      firstName: params.first_name,
-      id,
-      lastName: params.last_name,
-      phone: phone?.phone_number,
-      username: params.username,
+      authCreatedAt: user.created_at ? new Date(user.created_at) : new Date(),
+      avatar: (meta.avatar_url as string | undefined) ?? undefined,
+      email: user.email ?? undefined,
+      firstName,
+      fullName: displayName,
+      id: user.id,
+      lastName,
+      phone: (meta.phone as string | undefined) ?? undefined,
+      username: user.email?.split('@')[0],
     });
 
-    /* ↓ cloud slot ↓ */
+    await ProfileModel.upsert({
+      avatarUrl: (meta.avatar_url as string | undefined) ?? undefined,
+      displayName,
+      email: user.email ?? undefined,
+      firstName,
+      id: user.id,
+      lastName,
+      phone: (meta.phone as string | undefined) ?? undefined,
+    });
 
-    /* ↑ cloud slot ↑ */
+    await UserRoleModel.grantDefault(user.id);
+    await AppAccessModel.grantDefault(user.id);
 
-    return NextResponse.json({ message: 'user created', success: true }, { status: 200 });
+    return UserModel.findById(user.id);
   };
 
   deleteUser = async (id?: string) => {
     if (id) {
-      pino.info('delete user due to clerk webhook');
-
+      pino.info('delete user');
       await UserModel.deleteUser(id);
-
       return NextResponse.json({ message: 'user deleted' }, { status: 200 });
-    } else {
-      pino.warn('clerk sent a delete user request, but no user ID was included in the payload');
-      return NextResponse.json({ message: 'ok' }, { status: 200 });
     }
+
+    return NextResponse.json({ message: 'ok' }, { status: 200 });
   };
 
-  updateUser = async (id: string, params: UserJSON) => {
-    pino.info('updating user due to clerk webhook');
-
+  updateProfile = async (
+    userId: string,
+    params: {
+      avatar?: string;
+      email?: string;
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+      username?: string;
+    },
+  ) => {
     const userModel = new UserModel();
 
-    // Check if user already exists
-    const res = await UserModel.findById(id);
-
-    // If user not exists, skip update the user
-    if (!res)
-      return NextResponse.json(
-        {
-          message: "user not updated due to the user don't existing in the database",
-          success: false,
-        },
-        { status: 200 },
-      );
-
-    const email = params.email_addresses.find((e) => e.id === params.primary_email_address_id);
-    const phone = params.phone_numbers.find((e) => e.id === params.primary_phone_number_id);
-
-    await userModel.updateUser(id, {
-      avatar: params.image_url,
-      email: email?.email_address,
-      firstName: params.first_name,
-      id,
-      lastName: params.last_name,
-      phone: phone?.phone_number,
+    await userModel.updateUser(userId, {
+      avatar: params.avatar,
+      email: params.email,
+      firstName: params.firstName,
+      fullName:
+        [params.firstName, params.lastName].filter(Boolean).join(' ') || undefined,
+      id: userId,
+      lastName: params.lastName,
+      phone: params.phone,
       username: params.username,
     });
 
-    return NextResponse.json({ message: 'user updated', success: true }, { status: 200 });
+    await ProfileModel.upsert({
+      avatarUrl: params.avatar,
+      displayName:
+        [params.firstName, params.lastName].filter(Boolean).join(' ') || undefined,
+      email: params.email,
+      firstName: params.firstName,
+      id: userId,
+      lastName: params.lastName,
+      phone: params.phone,
+    });
   };
 }
