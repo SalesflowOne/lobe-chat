@@ -1,12 +1,12 @@
-# AgentOps Master Plan v3 — pathofsoler.com
+# AgentOps Master Plan v3 — agentcloud.one
 
 ## Locked decisions
 
 | Decision        | Choice                                                               |
 | --------------- | -------------------------------------------------------------------- |
 | CRM domain      | **pathofsoler.com** (Cloudflare DNS → self-hosted Twenty on Coolify) |
-| AgentOps domain | **pathofsoler.one** (Cloudflare DNS → Vercel)                        |
-| Sign-in         | **On-domain** — `pathofsoler.one/login` and `/signup`                |
+| AgentOps domain | **agentcloud.one** (Cloudflare DNS → Vercel)                         |
+| Sign-in         | **On-domain** — `agentcloud.one/login` and `/signup`                 |
 | Repo strategy   | **Evolve `lobe-chat` in place**                                      |
 | Auth            | **Supabase Auth** (branded on-domain login/signup/profile)           |
 | Integrations    | **Full Pipedream catalog** in UI (paginated + featured)              |
@@ -16,8 +16,9 @@
 ## Architecture
 
 ```
-pathofsoler.com → Twenty CRM (self-hosted on Coolify, crm.nebulis.one server)
-pathofsoler.one → AgentOps / LobeChat (Vercel)
+pathofsoler.com → Twenty CRM (self-hosted on Coolify)
+agentcloud.one → AgentOps / LobeChat (Vercel)
+  ├── pathofsoler.one / legacy subdomains → 301 redirect
   ├── Supabase Auth on-domain (/login, /signup, /profile)
   ├── Pipedream Connect + MCP
   ├── Integrations catalog (/integrations)
@@ -28,50 +29,39 @@ pathofsoler.one → AgentOps / LobeChat (Vercel)
 
 ## DNS
 
+### agentcloud.one (Cloudflare zone `fee398b55ffedf87e9e7062853171771`) — AgentOps / LobeChat
+
+| Record               | Value                                       | Proxy    |
+| -------------------- | ------------------------------------------- | -------- |
+| `agentcloud.one` A   | `216.198.79.1` (Vercel)                     | DNS only |
+| `www.agentcloud.one` | `8c77c1e216f721f1.vercel-dns-017.com` (CNAME) | DNS only |
+
+**Nameservers** (active):
+
+- `brynne.ns.cloudflare.com`
+- `carter.ns.cloudflare.com`
+
 ### pathofsoler.com (Cloudflare zone `36ca0956c4139d015cbfb35d1297baa0`) — Twenty CRM
 
-Twenty is **self-hosted** on Coolify (`twenty-os` app), not Twenty Cloud. Do **not** CNAME to `custom-domain.twenty.com`.
+Twenty is **self-hosted** on Coolify (`twenty-os` app), not Twenty Cloud.
 
 | Record                       | Value          | Proxy    |
 | ---------------------------- | -------------- | -------- |
 | `pathofsoler.com` A          | `5.161.72.226` | DNS only |
 | `www.pathofsoler.com` A      | `5.161.72.226` | DNS only |
-| `agentops.pathofsoler.com` A | `76.76.21.21`  | DNS only |
+| `agentops.pathofsoler.com` A | `76.76.21.21` | DNS only |
 
-Coolify app domains: `crm.nebulis.one`, `pathofsoler.com`, `www.pathofsoler.com`.\
-Twenty env: `SERVER_URL=https://pathofsoler.com`, `FRONTEND_URL=https://pathofsoler.com`.
-
-`app.pathofsoler.com` is reserved/broken in Cloudflare (NXDOMAIN) — use `agentops.pathofsoler.com` for AgentOps.
-
-### pathofsoler.one (Cloudflare zone `2891c72ffe12c88e336609975deca699`) — AgentOps / LobeChat
-
-| Record                  | Value         | Proxy    |
-| ----------------------- | ------------- | -------- |
-| `pathofsoler.one` A     | `76.76.21.21` | DNS only |
-| `www.pathofsoler.one` A | `76.76.21.21` | DNS only |
-
-**Nameservers** (required at registrar — zone is pending until these are set):
-
-- `brynne.ns.cloudflare.com`
-- `carter.ns.cloudflare.com`
-
-**Nameservers** (set at your registrar if zone is still pending):
-
-- `brynne.ns.cloudflare.com`
-- `carter.ns.cloudflare.com`
+`pathofsoler.com` apex serves Twenty CRM. `agentops.pathofsoler.com` redirects to `agentcloud.one` via Vercel.
 
 ### Vercel domains on `lobe-chat`
 
-- `pathofsoler.one`, `www.pathofsoler.one` (production AgentOps)
-- `agentops.pathofsoler.com` (redirects to `pathofsoler.one`)
-- `app.pathofsoler.com` redirects to `agentops` in `vercel.json` (DNS broken; do not use)
-
-`pathofsoler.com` and `www.pathofsoler.com` are **not** on Vercel — they point at the Coolify Twenty server.
+- `agentcloud.one`, `www.agentcloud.one` (production AgentOps)
+- Legacy redirects via `vercel.json`: `pathofsoler.one`, `pathofsoler.com`, `agentops.pathofsoler.com`
 
 ## Required environment variables
 
 ```env
-NEXT_PUBLIC_AGENTOPS_APP_URL=https://pathofsoler.one
+NEXT_PUBLIC_AGENTOPS_APP_URL=https://agentcloud.one
 NEXT_PUBLIC_AGENTOPS_PRODUCT_NAME=AgentOps
 NEXT_PUBLIC_SERVICE_MODE=server
 DATABASE_URL=...
@@ -91,10 +81,10 @@ PIPEDREAM_PROJECT_ENVIRONMENT=production
 
 ### Supabase Auth checklist
 
-1.  Enable email/password auth in Supabase dashboard
-2.  Set site URL to `https://pathofsoler.one`
-3.  Add redirect URLs: `/auth/callback`, `/reset-password`
-4.  Run migration `0006_supabase_auth.sql` on the app database
+1. Enable email/password auth in Supabase dashboard
+2. Set site URL to `https://agentcloud.one`
+3. Add redirect URLs: `https://agentcloud.one/auth/callback`, `https://agentcloud.one/reset-password`
+4. Add preview URL wildcard if using Vercel previews: `https://*-salesflow.vercel.app/**`
 
 ## Key routes
 
