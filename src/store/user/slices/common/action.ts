@@ -74,6 +74,9 @@ export const createCommonSlice: StateCreator<
       !!isLogin ? GET_USER_STATE_KEY : null,
       () => userService.getUserState(),
       {
+        onError: () => {
+          set({ isUserStateInit: true }, false, n('initUserState/error'));
+        },
         onSuccess: (data) => {
           options?.onSuccess?.(data);
 

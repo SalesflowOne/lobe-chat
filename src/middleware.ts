@@ -58,6 +58,13 @@ const isProtectedRoute = createRouteMatcher([
 export default authEnv.NEXT_PUBLIC_ENABLE_CLERK_AUTH
   ? clerkMiddleware(
       (auth, req) => {
+        const { userId } = auth();
+
+        // Skip the home-page spinner for signed-out visitors.
+        if (req.nextUrl.pathname === '/' && !userId) {
+          return NextResponse.redirect(new URL(CLERK_AUTH_PATHS.signInUrl, req.url));
+        }
+
         if (isProtectedRoute(req)) auth().protect();
       },
       {

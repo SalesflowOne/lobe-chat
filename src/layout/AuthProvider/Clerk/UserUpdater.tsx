@@ -1,19 +1,25 @@
 'use client';
 
 import { useClerk, useUser } from '@clerk/nextjs';
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { createStoreUpdater } from 'zustand-utils';
 
 import { useUserStore } from '@/store/user';
 import { LobeUser } from '@/types/user';
 
 // update the user data into the context
+const CLERK_INIT_TIMEOUT_MS = 3000;
+
 const UserUpdater = memo(() => {
   const { isLoaded, user, isSignedIn } = useUser();
+  const [clerkInitTimedOut, setClerkInitTimedOut] = useState(false);
 
   const { session, openUserProfile, signOut, openSignIn } = useClerk();
 
   const useStoreUpdater = createStoreUpdater(useUserStore);
+
+  const effectiveLoaded = clerkInitTimedOut || isLoaded;
+  const effectiveSignedIn = clerkInitTimedOut ? false : isSignedIn;
 
   const lobeUser = {
     avatar: user?.imageUrl,
@@ -24,9 +30,9 @@ const UserUpdater = memo(() => {
     username: user?.username,
   } as LobeUser;
 
-  useStoreUpdater('isLoaded', isLoaded);
+  useStoreUpdater('isLoaded', effectiveLoaded);
   useStoreUpdater('user', lobeUser);
-  useStoreUpdater('isSignedIn', isSignedIn);
+  useStoreUpdater('isSignedIn', effectiveSignedIn);
 
   useStoreUpdater('clerkUser', user);
   useStoreUpdater('clerkSession', session);
@@ -36,14 +42,14 @@ const UserUpdater = memo(() => {
 
   // If Clerk fails to initialize (domain/key mismatch), avoid an infinite loading screen.
   useEffect(() => {
-    if (isLoaded) return;
+    if (isLoaded || clerkInitTimedOut) return;
 
     const timeout = setTimeout(() => {
-      useUserStore.setState({ isLoaded: true, isSignedIn: false });
-    }, 8000);
+      setClerkInitTimedOut(true);
+    }, CLERK_INIT_TIMEOUT_MS);
 
     return () => clearTimeout(timeout);
-  }, [isLoaded]);
+  }, [clerkInitTimedOut, isLoaded]);
 
   return null;
 });
