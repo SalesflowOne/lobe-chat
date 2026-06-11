@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 
-import { requireServerAuthUserId } from '@/server/auth/getServerUser';
-
 import { getPipedreamExternalUserId } from '@/config/agentops';
 import { isPipedreamConfigured } from '@/config/pipedream';
+import { requireServerAuthUserId } from '@/server/auth/getServerUser';
 import { getPipedreamClient } from '@/server/pipedream/client';
 
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export const GET = async () => {

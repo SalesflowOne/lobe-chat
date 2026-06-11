@@ -1,24 +1,24 @@
 import { eq } from 'drizzle-orm';
 
 import { serverDB } from '../core/db';
-import { profiles, type NewProfile } from '../schemas/lobechat/auth';
+import { type NewProfile, profiles } from '../schemas/lobechat/auth';
 
-export class ProfileModel {
-  static upsert = async (params: NewProfile) => {
-    const [existing] = await serverDB
-      .select()
-      .from(profiles)
-      .where(eq(profiles.id, params.id))
-      .limit(1);
+const upsert = async (params: NewProfile) => {
+  const [existing] = await serverDB
+    .select()
+    .from(profiles)
+    .where(eq(profiles.id, params.id))
+    .limit(1);
 
-    if (existing) {
-      await serverDB
-        .update(profiles)
-        .set({ ...params, updatedAt: new Date() })
-        .where(eq(profiles.id, params.id));
-      return;
-    }
+  if (existing) {
+    await serverDB
+      .update(profiles)
+      .set({ ...params, updatedAt: new Date() })
+      .where(eq(profiles.id, params.id));
+    return;
+  }
 
-    await serverDB.insert(profiles).values(params);
-  };
-}
+  await serverDB.insert(profiles).values(params);
+};
+
+export const ProfileModel = { upsert };

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 
-import { UserService } from '@/server/services/user';
 import { getServerAuthUser } from '@/server/auth/getServerUser';
+import { UserService } from '@/server/services/user';
 
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export const POST = async () => {

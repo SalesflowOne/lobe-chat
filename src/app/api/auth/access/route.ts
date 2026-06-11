@@ -4,6 +4,7 @@ import { APP_ID } from '@/config/supabase';
 import { AppAccessModel } from '@/database/server/models/appAccess';
 import { getServerAuthUserId } from '@/server/auth/getServerUser';
 
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export const GET = async (request: Request) => {

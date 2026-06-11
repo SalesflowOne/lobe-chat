@@ -3,9 +3,10 @@ import { NextResponse } from 'next/server';
 import { getPipedreamExternalUserId } from '@/config/agentops';
 import { getAllowedOrigins, resolveAppOriginFromRequest } from '@/config/auth-paths';
 import { isPipedreamConfigured } from '@/config/pipedream';
-import { getPipedreamClient } from '@/server/pipedream/client';
 import { requireServerAuthUserId } from '@/server/auth/getServerUser';
+import { getPipedreamClient } from '@/server/pipedream/client';
 
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export const POST = async (req: Request) => {

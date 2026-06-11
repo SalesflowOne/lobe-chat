@@ -1,10 +1,10 @@
 import { nanoid } from 'nanoid';
 import { NextResponse } from 'next/server';
 
+import { deployArtifactToSandbox } from '@/server/artifacts/sandbox';
 import { requireServerAuthUserId } from '@/server/auth/getServerUser';
 
-import { deployArtifactToSandbox } from '@/server/artifacts/sandbox';
-
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export const POST = async (req: Request) => {

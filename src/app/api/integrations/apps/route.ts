@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 
-import { requireServerAuthUserId } from '@/server/auth/getServerUser';
-
 import { agentOpsEnv } from '@/config/agentops';
 import { isPipedreamConfigured } from '@/config/pipedream';
+import { requireServerAuthUserId } from '@/server/auth/getServerUser';
 import { fetchFeaturedIntegrationApps, listIntegrationAppsPage } from '@/server/pipedream/apps';
 
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export const GET = async (req: Request) => {

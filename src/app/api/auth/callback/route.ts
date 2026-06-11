@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { createSupabaseServerClient } from '@/libs/supabase/server';
 
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export const GET = async (request: Request) => {
