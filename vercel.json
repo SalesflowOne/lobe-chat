@@ -8,8 +8,14 @@
   "redirects": [
     {
       "source": "/:path*",
-      "has": [{ "type": "host", "value": "www.app.pathofsoler.com" }],
-      "destination": "https://app.pathofsoler.com/:path*",
+      "has": [{ "type": "host", "value": "www.agentops.pathofsoler.com" }],
+      "destination": "https://agentops.pathofsoler.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "app.pathofsoler.com" }],
+      "destination": "https://agentops.pathofsoler.com/:path*",
       "permanent": true
     },
     {
