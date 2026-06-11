@@ -11,6 +11,8 @@ dotenv.config();
 const runMigrations = async () => {
   await migrator.migrate(serverDB, {
     migrationsFolder: join(__dirname, '../../src/database/server/migrations'),
+    // Isolated from other apps sharing the same Postgres (e.g. clawops schema on One OS).
+    migrationsTable: 'lobe_drizzle_migrations',
   });
   console.log('✅ database migration pass.');
   // eslint-disable-next-line unicorn/no-process-exit
