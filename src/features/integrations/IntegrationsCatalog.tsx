@@ -10,8 +10,14 @@ import { Center, Flexbox } from 'react-layout-kit';
 
 import type { IntegrationApp } from '@/server/pipedream/apps';
 
+interface FeaturedCategory {
+  apps: IntegrationApp[];
+  title: string;
+}
+
 interface IntegrationsResponse {
   apps: IntegrationApp[];
+  categories?: FeaturedCategory[];
   configured: boolean;
   featured?: boolean;
   message?: string;
@@ -26,6 +32,19 @@ interface IntegrationsResponse {
 interface AccountsResponse {
   accounts: Array<{ appSlug: string; healthy?: boolean; id: string }>;
 }
+
+const QUICK_SEARCHES = [
+  'Slack',
+  'Gmail',
+  'Notion',
+  'HubSpot',
+  'Stripe',
+  'GitHub',
+  'Salesforce',
+  'Zoom',
+  'Jira',
+  'Shopify',
+];
 
 const fetchFeaturedApps = async (): Promise<IntegrationsResponse> => {
   const res = await fetch('/api/integrations/apps?featured=true');
@@ -62,8 +81,11 @@ const connectApp = async (appSlug: string) => {
     headers: { 'Content-Type': 'application/json' },
     method: 'POST',
   });
-  if (!res.ok) throw new Error('Failed to start connection');
-  return res.json() as Promise<{ connectLink: string }>;
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? 'Failed to start connection');
+  }
+  return res.json() as Promise<{ connectLink?: string; connectUrl?: string }>;
 };
 
 const IntegrationCard = memo<{
@@ -189,12 +211,20 @@ const IntegrationsCatalog = memo(() => {
 
   const connectMutation = useMutation({
     mutationFn: connectApp,
+    onError: (error: Error) => {
+      message.error(error.message || 'Could not start connector setup');
+    },
     onSettled: () => {
       setConnectingSlug(null);
       queryClient.invalidateQueries({ queryKey: ['integrations', 'accounts'] });
     },
-    onSuccess: ({ connectLink }) => {
-      window.open(connectLink, '_blank', 'noopener,noreferrer,width=520,height=720');
+    onSuccess: ({ connectLink, connectUrl }) => {
+      const url = connectLink ?? connectUrl;
+      if (!url) {
+        message.error('Connect link was missing from the server response');
+        return;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer,width=520,height=720');
     },
   });
 
@@ -203,7 +233,16 @@ const IntegrationsCatalog = memo(() => {
     [accountsData],
   );
 
-  const allApps = useMemo(() => pagesData?.pages.flatMap((page) => page.apps) ?? [], [pagesData]);
+  const featuredSlugs = useMemo(
+    () => new Set(featuredData?.apps.map((app) => app.nameSlug) ?? []),
+    [featuredData],
+  );
+
+  const allApps = useMemo(() => {
+    const apps = pagesData?.pages.flatMap((page) => page.apps) ?? [];
+    if (debouncedQuery) return apps;
+    return apps.filter((app) => !featuredSlugs.has(app.nameSlug));
+  }, [debouncedQuery, featuredSlugs, pagesData]);
 
   const handleConnect = (slug: string) => {
     setConnectingSlug(slug);
@@ -228,7 +267,7 @@ const IntegrationsCatalog = memo(() => {
         description={
           featuredData?.message ??
           pagesData?.pages[0]?.message ??
-          'Pipedream is not configured for this deployment.'
+          'Pipedream is not configured for this deployment. Add PIPEDREAM_CLIENT_ID, PIPEDREAM_CLIENT_SECRET, and PIPEDREAM_PROJECT_ID to enable connectors.'
         }
         image={Empty.PRESENTED_IMAGE_SIMPLE}
       />
@@ -237,6 +276,8 @@ const IntegrationsCatalog = memo(() => {
 
   const totalCount =
     pagesData?.pages[0]?.pageInfo?.totalCount ?? pagesData?.pages[0]?.total ?? allApps.length;
+
+  const featuredCategories = featuredData?.categories ?? [];
 
   return (
     <Flexbox gap={24} padding={24} style={{ maxWidth: 1200, width: '100%' }}>
@@ -259,30 +300,46 @@ const IntegrationsCatalog = memo(() => {
         value={query}
       />
 
-      {!debouncedQuery && featuredData?.apps.length ? (
-        <Flexbox gap={12}>
-          <Typography.Title level={5} style={{ margin: 0 }}>
-            Popular
-          </Typography.Title>
-          <IntegrationsGrid
-            apps={featuredData.apps}
-            connectedSlugs={connectedSlugs}
-            connectingSlug={connectingSlug}
-            onConnect={handleConnect}
-          />
+      {!debouncedQuery ? (
+        <Flexbox gap={8} horizontal wrap="wrap">
+          {QUICK_SEARCHES.map((label) => (
+            <Button key={label} onClick={() => setQuery(label)} size="small" type="default">
+              {label}
+            </Button>
+          ))}
         </Flexbox>
       ) : null}
+
+      {!debouncedQuery && featuredCategories.length > 0
+        ? featuredCategories.map((category) => (
+            <Flexbox gap={12} key={category.title}>
+              <Typography.Title level={5} style={{ margin: 0 }}>
+                {category.title}
+              </Typography.Title>
+              <IntegrationsGrid
+                apps={category.apps}
+                connectedSlugs={connectedSlugs}
+                connectingSlug={connectingSlug}
+                onConnect={handleConnect}
+              />
+            </Flexbox>
+          ))
+        : null}
 
       <Flexbox gap={12}>
         <Typography.Title level={5} style={{ margin: 0 }}>
           {debouncedQuery ? 'Search results' : 'All connectors'}
         </Typography.Title>
-        <IntegrationsGrid
-          apps={allApps}
-          connectedSlugs={connectedSlugs}
-          connectingSlug={connectingSlug}
-          onConnect={handleConnect}
-        />
+        {allApps.length === 0 && !debouncedQuery ? (
+          <Typography.Text type="secondary">Loading more connectors…</Typography.Text>
+        ) : (
+          <IntegrationsGrid
+            apps={allApps}
+            connectedSlugs={connectedSlugs}
+            connectingSlug={connectingSlug}
+            onConnect={handleConnect}
+          />
+        )}
         {hasNextPage && (
           <Center>
             <Button loading={isFetchingNextPage} onClick={() => fetchNextPage()} type="default">

@@ -41,5 +41,6 @@ export const POST = async (req: Request) => {
   const connectUrl = new URL(tokenResponse.connectLinkUrl);
   connectUrl.searchParams.set('app', appSlug);
 
-  return NextResponse.json({ connectUrl: connectUrl.toString() });
+  const connectLink = connectUrl.toString();
+  return NextResponse.json({ connectLink, connectUrl: connectLink });
 };

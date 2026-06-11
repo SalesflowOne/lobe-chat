@@ -3,7 +3,11 @@ import { NextResponse } from 'next/server';
 import { agentOpsEnv } from '@/config/agentops';
 import { isPipedreamConfigured } from '@/config/pipedream';
 import { requireServerAuthUserId } from '@/server/auth/getServerUser';
-import { fetchFeaturedIntegrationApps, listIntegrationAppsPage } from '@/server/pipedream/apps';
+import {
+  fetchFeaturedIntegrationApps,
+  fetchFeaturedIntegrationCategories,
+  listIntegrationAppsPage,
+} from '@/server/pipedream/apps';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -30,9 +34,10 @@ export const GET = async (req: Request) => {
   const limit = searchParams.get('limit') ? Number(searchParams.get('limit')) : undefined;
 
   if (featured && !q) {
-    const apps = await fetchFeaturedIntegrationApps();
+    const categories = await fetchFeaturedIntegrationCategories();
+    const apps = categories.flatMap((category) => category.apps);
     return NextResponse.json(
-      { apps, configured: true, featured: true, total: apps.length },
+      { apps, categories, configured: true, featured: true, total: apps.length },
       {
         headers: {
           'Cache-Control': `s-maxage=${agentOpsEnv.AGENTOPS_APPS_CACHE_TTL_SECONDS}, stale-while-revalidate=600`,

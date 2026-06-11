@@ -1,4 +1,8 @@
-import { FEATURED_INTEGRATION_SLUGS , agentOpsEnv } from '@/config/agentops';
+import {
+  FEATURED_INTEGRATION_CATEGORIES,
+  FEATURED_INTEGRATION_SLUGS,
+  agentOpsEnv,
+} from '@/config/agentops';
 import { isPipedreamConfigured } from '@/config/pipedream';
 
 import { getPipedreamClient } from './client';
@@ -23,12 +27,19 @@ export interface IntegrationAppsPage {
   };
 }
 
-interface AppsCache {
+export interface FeaturedIntegrationCategory {
   apps: IntegrationApp[];
+  title: string;
+}
+
+interface AppsCache {
+  categories: FeaturedIntegrationCategory[];
   expiresAt: number;
 }
 
 let featuredAppsCache: AppsCache | null = null;
+
+const featuredSlugSet = new Set<string>(FEATURED_INTEGRATION_SLUGS);
 
 const mapApp = (app: {
   authType?: string | null;
@@ -44,12 +55,30 @@ const mapApp = (app: {
   description: app.description ?? null,
   featuredWeight: app.featuredWeight ?? 0,
   imgSrc: app.imgSrc,
-  isFeatured: FEATURED_INTEGRATION_SLUGS.includes(
-    app.nameSlug as (typeof FEATURED_INTEGRATION_SLUGS)[number],
-  ),
+  isFeatured: featuredSlugSet.has(app.nameSlug),
   name: app.name,
   nameSlug: app.nameSlug,
 });
+
+const fetchAppBySlug = async (slug: string): Promise<IntegrationApp | null> => {
+  const client = getPipedreamClient();
+
+  try {
+    const page = await client.apps.list({
+      hasActions: true,
+      limit: 10,
+      q: slug,
+    });
+
+    for await (const app of page) {
+      if (app.nameSlug === slug) return mapApp(app);
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+};
 
 /** Paginated catalog — avoids loading 3000+ apps into memory at once. */
 export const listIntegrationAppsPage = async (params: {
@@ -92,39 +121,38 @@ export const listIntegrationAppsPage = async (params: {
   };
 };
 
-/** Featured connectors — small cached set for the top of the catalog. */
-export const fetchFeaturedIntegrationApps = async (): Promise<IntegrationApp[]> => {
+/** Featured connectors grouped by category — fetched per slug for reliability. */
+export const fetchFeaturedIntegrationCategories = async (): Promise<
+  FeaturedIntegrationCategory[]
+> => {
   const ttlMs = agentOpsEnv.AGENTOPS_APPS_CACHE_TTL_SECONDS * 1000;
 
   if (featuredAppsCache && featuredAppsCache.expiresAt > Date.now()) {
-    return featuredAppsCache.apps;
+    return featuredAppsCache.categories;
   }
 
   if (!isPipedreamConfigured()) return [];
 
-  const client = getPipedreamClient();
-  const page = await client.apps.list({
-    hasActions: true,
-    limit: 100,
-    sortDirection: 'desc',
-    sortKey: 'featured_weight',
-  });
+  const slugApps = await Promise.all(
+    FEATURED_INTEGRATION_SLUGS.map(async (slug) => [slug, await fetchAppBySlug(slug)] as const),
+  );
+  const bySlug = new Map(slugApps.filter(([, app]) => app).map(([slug, app]) => [slug, app!]));
 
-  const featuredSet = new Set<string>(FEATURED_INTEGRATION_SLUGS);
-  const bySlug = new Map<string, IntegrationApp>();
+  const categories = FEATURED_INTEGRATION_CATEGORIES.map((category) => ({
+    apps: category.slugs
+      .map((slug) => bySlug.get(slug))
+      .filter((app): app is IntegrationApp => Boolean(app)),
+    title: category.title,
+  })).filter((category) => category.apps.length > 0);
 
-  for await (const app of page) {
-    if (featuredSet.has(app.nameSlug)) {
-      bySlug.set(app.nameSlug, mapApp(app));
-    }
-  }
+  featuredAppsCache = { categories, expiresAt: Date.now() + ttlMs };
+  return categories;
+};
 
-  const apps = FEATURED_INTEGRATION_SLUGS.map((slug) => bySlug.get(slug)).filter(
-    Boolean,
-  ) as IntegrationApp[];
-
-  featuredAppsCache = { apps, expiresAt: Date.now() + ttlMs };
-  return apps;
+/** Flat featured list (all categories combined). */
+export const fetchFeaturedIntegrationApps = async (): Promise<IntegrationApp[]> => {
+  const categories = await fetchFeaturedIntegrationCategories();
+  return categories.flatMap((category) => category.apps);
 };
 
 export const searchIntegrationApps = async (query: {

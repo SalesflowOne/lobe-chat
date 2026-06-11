@@ -21,6 +21,11 @@ const CategoryContent = memo<{ modal?: boolean }>(({ modal }) => {
     <Menu
       items={cateItems}
       onClick={({ key }) => {
+        if (key === 'integrations') {
+          router.push('/integrations');
+          return;
+        }
+
         if (modal) {
           router.replace('/settings/modal', { query: { tab: key } });
         } else {

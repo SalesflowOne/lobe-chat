@@ -17,36 +17,78 @@ export const ALTERNATE_APP_HOSTS = [
 
 export const AGENTOPS_ALLOWED_HOSTS = [DEFAULT_APP_HOST, ...ALTERNATE_APP_HOSTS] as const;
 
-/** Well-known connectors pinned at the top of the integrations catalog. */
-export const FEATURED_INTEGRATION_SLUGS = [
-  'slack',
-  'gmail',
-  'google_sheets',
-  'notion',
-  'hubspot',
-  'stripe',
-  'github',
-  'linear',
-  'airtable',
-  'salesforce',
-  'microsoft_outlook',
-  'microsoft_teams',
-  'shopify',
-  'twilio',
-  'zendesk',
-  'intercom',
-  'asana',
-  'trello',
-  'dropbox',
-  'google_drive',
-  'google_calendar',
-  'discord',
-  'mailchimp',
-  'openai',
-  'anthropic',
+/** Curated connector groups shown at the top of the integrations catalog. */
+export const FEATURED_INTEGRATION_CATEGORIES = [
+  {
+    title: 'Communication',
+    slugs: [
+      'slack',
+      'discord',
+      'microsoft_teams',
+      'microsoft_outlook',
+      'twilio',
+      'zoom',
+      'intercom',
+      'telegram_bot_api',
+    ],
+  },
+  {
+    title: 'Google Workspace',
+    slugs: ['gmail', 'google_sheets', 'google_drive', 'google_calendar', 'google_docs', 'google_forms'],
+  },
+  {
+    title: 'CRM & Sales',
+    slugs: [
+      'hubspot',
+      'salesforce',
+      'pipedrive',
+      'close',
+      'stripe',
+      'shopify',
+      'zendesk',
+      'freshdesk',
+    ],
+  },
+  {
+    title: 'Productivity',
+    slugs: [
+      'notion',
+      'linear',
+      'airtable',
+      'asana',
+      'trello',
+      'clickup',
+      'monday',
+      'jira',
+      'dropbox',
+      'calendly',
+    ],
+  },
+  {
+    title: 'Marketing',
+    slugs: ['mailchimp', 'sendgrid', 'facebook_pages', 'linkedin', 'instagram'],
+  },
+  {
+    title: 'Developer & AI',
+    slugs: [
+      'github',
+      'gitlab',
+      'vercel',
+      'supabase',
+      'openai',
+      'anthropic',
+      'cloudflare',
+      'postmark',
+    ],
+  },
 ] as const;
 
-export type FeaturedIntegrationSlug = (typeof FEATURED_INTEGRATION_SLUGS)[number];
+/** Flat list of all featured slugs (order preserved by category). */
+export const FEATURED_INTEGRATION_SLUGS: readonly string[] = FEATURED_INTEGRATION_CATEGORIES.flatMap(
+  (category) => category.slugs,
+);
+
+export type FeaturedIntegrationSlug = (typeof FEATURED_INTEGRATION_CATEGORIES)[number]['slugs'][number];
 
 export const getAgentOpsConfig = () => {
   return createEnv({
